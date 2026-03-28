@@ -1368,7 +1368,7 @@ function addProject() {
       var initials = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
       var sector = m.sector || 'Time';
       TEAM.push({ name: name, role: sector, email: m.email || '',
-        xp: m.xp_total||0, meets: m.meetings_month||0, level: m.level||1,
+        pts: m.xp_total||0, xp: m.xp_total||0, meets: m.meetings_month||0, level: m.level||1,
         i: initials, bg: SECTOR_COLORS[sector]||'#FF4F11', fg:'#fff', status:'green', avatar: m.avatar_url||null, goals:[], northstars:[] });
     });
     if (typeof renderSidebarTeam==='function') renderSidebarTeam();
@@ -1387,7 +1387,7 @@ function addProject() {
     var ranked = res.data.map(function(m) {
       var hist = {};
       try { hist = JSON.parse(m.meetings_history||'{}'); } catch(e){}
-      return { name: m.name, sector: m.sector, xp: m.xp_total||0, meetsMes: hist[mes]||m.meetings_month||0, avatar: m.avatar_url };
+      return { name: m.name, sector: m.sector, pts: m.xp_total||0, xp: m.xp_total||0, meetsMes: hist[mes]||m.meetings_month||0, avatar: m.avatar_url };
     }).sort(function(a,b){ return b.xp - a.xp; });
 
     // Atualiza leaderboard com dados reais se estiver visivel

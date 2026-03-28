@@ -1114,11 +1114,10 @@ function addProject() {
   renderKPIs();
   if(currentTab==='projetos') renderProjects('all-proj');
 }
-
 </script>
 
 <script>
-// SUPABASE AUTH + CALENDAR SYNC
+// SUPABASE AUTH + CALENDAR SYNC v2 — fixes: logout, meu painel, dados reais
 (function() {
   var sb = supabase.createClient(
     'https://gaubpaxaywmfzudajqyn.supabase.co',
@@ -1126,9 +1125,9 @@ function addProject() {
   );
 
   var sess = null;
-  window._sbLogout = function() { sb.auth.signOut(); };
-  window._sbSync   = syncCalendar;
+  window._sbSync = syncCalendar;
 
+  // Vincula botao de login
   window.addEventListener('DOMContentLoaded', function() {
     var btn = document.getElementById('btn-login');
     if (btn) btn.addEventListener('click', loginWithGoogle);
@@ -1146,19 +1145,97 @@ function addProject() {
   }
   window._sbLogin = loginWithGoogle;
 
+  function logout() {
+    if (confirm('Deseja sair do Hub?')) {
+      sb.auth.signOut();
+    }
+  }
+  window._sbLogout = logout;
+
+  // Carrega time real do Supabase e atualiza TEAM global
+  async function loadRealTeam() {
+    var res = await sb.from('member_stats').select('*').order('xp_total', { ascending: false });
+    if (!res.data || !res.data.length) return;
+
+    // Cores por setor
+    var colors = { CEO:'#0D1B3E', Operacoes:'#FF4F11', Design:'#6B3FCF', Tecnologia:'#1A5DAB',
+      Marketing:'#B87000', Comercial:'#0A7A42', CS:'#0A7A7A', Financeiro:'#B5286E',
+      Vendas:'#C42828', Gestao:'#6B6864' };
+
+    // Substitui o array TEAM global com dados reais
+    TEAM.length = 0;
+    res.data.forEach(function(m) {
+      var name = m.name || 'Membro';
+      var initials = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
+      var sector = m.sector || 'Time';
+      var color = colors[sector] || '#FF4F11';
+      TEAM.push({
+        name: name, role: sector, email: m.email || '',
+        xp: m.xp_total || 0, meets: m.meetings_month || 0,
+        level: m.level || 1, i: initials,
+        bg: color, fg: '#fff', status: 'green',
+        avatar: m.avatar_url || null,
+        goals: [], northstars: []
+      });
+    });
+
+    // Re-renderiza sidebar e ranking com dados reais
+    if (typeof renderSidebarTeam === 'function') renderSidebarTeam();
+    if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    if (typeof renderKPIs === 'function') renderKPIs();
+  }
+
+  // Detecta o membro logado e abre o MEU PAINEL correto
+  function openMyPanel(userEmail) {
+    // Encontra o index do usuario logado no TEAM
+    var idx = 0;
+    for (var i = 0; i < TEAM.length; i++) {
+      var m = TEAM[i];
+      if (m.name && userEmail) {
+        // Tenta match por email ou nome
+        var emailName = userEmail.split('@')[0].replace('.', ' ').toLowerCase();
+        var teamName = (m.name || '').toLowerCase();
+        if (teamName.indexOf(emailName.split(' ')[0]) !== -1) {
+          idx = i; break;
+        }
+      }
+    }
+    // Muda para visao do membro correto
+    if (typeof renderMemberView === 'function') {
+      renderMemberView(idx);
+      // Atualiza hero com dados reais do usuario logado
+      setTimeout(function() {
+        var heroName = document.querySelector('.hero-info h2');
+        var heroEmail = document.querySelector('.hero-info p');
+        var heroAv = document.querySelector('.hero-av');
+        if (heroName && sess) {
+          var realName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
+          heroName.textContent = realName;
+        }
+        if (heroEmail && sess) heroEmail.textContent = sess.user.email + ' · ' + (TEAM[idx] ? TEAM[idx].role : '');
+        if (heroAv && sess && sess.user.user_metadata && sess.user.user_metadata.avatar_url) {
+          heroAv.style.background = 'url(' + sess.user.user_metadata.avatar_url + ') center/cover';
+          heroAv.textContent = '';
+        }
+      }, 100);
+    }
+  }
+
   function showChip(user) {
     var name   = (user.user_metadata && user.user_metadata.full_name) || user.email;
     var avatar = user.user_metadata && user.user_metadata.avatar_url;
     var init   = name.split(' ').slice(0,2).map(function(n){return n[0];}).join('').toUpperCase();
     var wrap   = document.getElementById('user-chip-wrap');
     if (!wrap) return;
-    wrap.innerHTML = avatar
-      ? '<div class="user-chip" onclick="window._sbLogout()" title="Sair"><img class="user-av" src="'+avatar+'">'+name.split(' ')[0]+'</div>'
-      : '<div class="user-chip" onclick="window._sbLogout()" title="Sair"><div class="user-av-fb">'+init+'</div>'+name.split(' ')[0]+'</div>';
+    // CORRECAO 1: botao de logout separado, nao no chip da foto
+    wrap.innerHTML = (avatar
+      ? '<div class="user-chip" title="' + name + '" style="cursor:default"><img class="user-av" src="' + avatar + '">' + name.split(' ')[0] + '</div>'
+      : '<div class="user-chip" title="' + name + '" style="cursor:default"><div class="user-av-fb">' + init + '</div>' + name.split(' ')[0] + '</div>')
+      + '<button onclick="window._sbLogout()" style="background:none;border:1px solid #e2e0db;border-radius:6px;padding:4px 8px;font-size:10px;color:#6B6864;cursor:pointer;margin-left:4px;" title="Sair">Sair</button>';
   }
 
   async function syncCalendar() {
-    if (!sess || !sess.provider_token) { console.log('Sem token'); return; }
+    if (!sess || !sess.provider_token) return;
     var token  = sess.provider_token;
     var userId = sess.user.id;
     var now    = new Date();
@@ -1172,7 +1249,8 @@ function addProject() {
       var items = data.items || [];
 
       var events = items.map(function(e) {
-        return { id: e.id, user_id: userId, title: e.summary || '(sem titulo)',
+        return { id: e.id, user_id: userId,
+          title: e.summary || '(sem titulo)',
           start_at: (e.start && (e.start.dateTime || e.start.date)),
           end_at:   (e.end   && (e.end.dateTime   || e.end.date)),
           attendees: e.attendees || [], meet_link: e.hangoutLink || null, status: e.status };
@@ -1188,17 +1266,19 @@ function addProject() {
       var xpRes   = await sb.from('xp_log').select('points').eq('user_id', userId);
       var xpTotal = (xpRes.data || []).reduce(function(s,r){return s+r.points;}, 0);
       var level   = Math.floor(xpTotal/1000)+1;
+      var userName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
 
-      await sb.from('profiles').update({ xp_total: xpTotal, level: level }).eq('id', userId);
-      await sb.from('member_stats').upsert({ user_id: userId,
-        name: (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email,
+      await sb.from('profiles').update({ xp_total: xpTotal, level: level, name: userName }).eq('id', userId);
+      await sb.from('member_stats').upsert({
+        user_id: userId, name: userName,
+        email: sess.user.email,
         avatar_url: (sess.user.user_metadata && sess.user.user_metadata.avatar_url) || null,
         xp_total: xpTotal, level: level,
         meetings_month: events.filter(function(e){return e.status!=='cancelled';}).length,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
-      // Reunioes de hoje no Meu Painel
+      // Reunioes de hoje
       var el = document.getElementById('my-meetings');
       if (el) {
         var today = new Date().toDateString();
@@ -1206,34 +1286,56 @@ function addProject() {
         el.innerHTML = todayEvs.length
           ? todayEvs.map(function(e){
               var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-              return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span></div>';
+              return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>':'')+'</div>';
             }).join('')
           : '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniao hoje</div>';
       }
 
-      // Sync box
       var sb2 = document.getElementById('sync-box');
-      if (sb2) sb2.innerHTML = '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div><div class="sync-s">'+events.length+' eventos este mes</div><div class="sync-btns"><span class="sync-ok">Calendar conectado</span></div>';
+      if (sb2) sb2.innerHTML = '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div><div class="sync-s">'+events.filter(function(e){return e.status!=="cancelled";}).length+' reunioes este mes</div><div class="sync-btns"><span class="sync-ok">Calendar conectado</span></div>';
 
-      console.log('Sync ok:', events.length, 'eventos · XP:', xpTotal);
+      // Recarrega time com dados atualizados
+      await loadRealTeam();
+
     } catch(err) {
       console.error('Sync error:', err);
     }
   }
 
-  sb.auth.onAuthStateChange(function(event, s) {
-    if (event === 'SIGNED_IN' && s) {
-      var email = s.user.email || '';
-      if (!email.endsWith('@49educacao.com.br') && !email.endsWith('@49er.com.br')) {
-        sb.auth.signOut();
-        alert('Acesso restrito a @49educacao.com.br');
-        return;
-      }
-      sess = s;
-      document.getElementById('login-overlay').classList.add('hidden');
-      showChip(s.user);
-      syncCalendar();
+  async function onSignIn(s) {
+    var email = s.user.email || '';
+    if (!email.endsWith('@49educacao.com.br') && !email.endsWith('@49er.com.br')) {
+      await sb.auth.signOut();
+      alert('Acesso restrito a @49educacao.com.br');
+      return;
     }
+    sess = s;
+    document.getElementById('login-overlay').classList.add('hidden');
+    showChip(s.user);
+
+    // Carrega time real primeiro, depois abre painel do usuario
+    await loadRealTeam();
+
+    // Se estava em Meu Painel, abre o painel do usuario logado
+    if (typeof currentView !== 'undefined' && currentView === 'member') {
+      openMyPanel(s.user.email);
+    }
+
+    // Vincula botao "Meu Painel" para abrir o painel correto
+    var vbtn = document.querySelector('.vbtn:nth-child(2)');
+    if (vbtn) {
+      var orig = vbtn.getAttribute('onclick');
+      vbtn.onclick = function() {
+        if (typeof setView === 'function') setView('member', vbtn);
+        openMyPanel(sess && sess.user ? sess.user.email : '');
+      };
+    }
+
+    await syncCalendar();
+  }
+
+  sb.auth.onAuthStateChange(function(event, s) {
+    if (event === 'SIGNED_IN' && s) { onSignIn(s); }
     if (event === 'SIGNED_OUT') {
       sess = null;
       document.getElementById('login-overlay').classList.remove('hidden');
@@ -1247,10 +1349,7 @@ function addProject() {
     if (!s) return;
     var email = s.user.email || '';
     if (email.endsWith('@49educacao.com.br') || email.endsWith('@49er.com.br')) {
-      sess = s;
-      document.getElementById('login-overlay').classList.add('hidden');
-      showChip(s.user);
-      syncCalendar();
+      onSignIn(s);
     }
   });
 

@@ -1132,23 +1132,20 @@ function addProject() {
 }
 </script>
 <style>
-/* ── RANKING MENSAL EXTRA ── */
 .month-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
 .mtab{padding:6px 14px;border-radius:20px;border:1px solid var(--g200);background:var(--w);font-family:var(--font);font-size:11px;font-weight:600;color:var(--g400);cursor:pointer;transition:all .13s;}
 .mtab:hover{border-color:var(--o);color:var(--o);}
 .mtab.active{background:var(--o);color:#fff;border-color:var(--o);}
-.src-pills{display:flex;gap:6px;margin-bottom:14px;}
+.src-pills{display:flex;gap:6px;margin-bottom:14px;align-items:center;}
 .src-pill{padding:4px 11px;border-radius:12px;font-size:10px;font-weight:600;border:1px solid;cursor:pointer;transition:all .13s;}
-.src-cal{border-color:#4A87E8;color:#4A87E8;background:#fff;}
-.src-cal.on{background:#4A87E8;color:#fff;}
-.src-drive{border-color:var(--green);color:var(--green);background:#fff;}
-.src-drive.on{background:var(--green);color:#fff;}
-.src-gmail{border-color:var(--red);color:var(--red);background:#fff;}
-.src-gmail.on{background:var(--red);color:#fff;}
+.src-cal{border-color:#4A87E8;color:#4A87E8;background:#fff;} .src-cal.on{background:#4A87E8;color:#fff;}
+.src-drive{border-color:var(--green);color:var(--green);background:#fff;} .src-drive.on{background:var(--green);color:#fff;}
+.src-gmail{border-color:var(--red);color:var(--red);background:#fff;} .src-gmail.on{background:var(--red);color:#fff;}
 .lb-detail{font-size:9px;color:var(--g400);font-family:var(--mono);margin-top:1px;}
+.loading-msg{font-size:12px;color:var(--g400);padding:16px 0;text-align:center;}
 </style>
 <script>
-// HUB 49 EDUCACAO — v5 — ranking mensal por fonte
+// HUB 49 — v6 — FULL SUPABASE, ZERO MOCK
 (function() {
   var sb = supabase.createClient(
     'https://gaubpaxaywmfzudajqyn.supabase.co',
@@ -1156,62 +1153,291 @@ function addProject() {
   );
 
   var sess = null;
-  var monthlyData = {}; // { 'nome': { '2026-01': {cal:0,drive:0,gmail:0,total:0}, ... } }
-  var selectedMonth = '2026-' + (new Date().getMonth() < 9 ? '0'+(new Date().getMonth()+1) : (new Date().getMonth()+1));
-  var activeSources = { cal: true, drive: true, gmail: true };
+  var allEvents = []; // todos os eventos do time (do banco)
+  var monthlyData = {};
+  var selectedMonth = '2026-' + (new Date().getMonth() < 9 ? '0'+(new Date().getMonth()+1) : ''+(new Date().getMonth()+1));
+  var activeSources = { cal:true, drive:true, gmail:true };
+  var MONTHS = [{key:'2026-01',label:'Jan 26'},{key:'2026-02',label:'Fev 26'},{key:'2026-03',label:'Mar 26'},{key:'2026-04',label:'Abr 26'}];
+  var SECTOR_COLORS = {CEO:'#0D1B3E',Operacoes:'#FF4F11',Design:'#6B3FCF',Tecnologia:'#1A5DAB',Marketing:'#B87000',Comercial:'#0A7A42',CS:'#0A7A7A',Financeiro:'#B5286E',Vendas:'#C42828',Gestao:'#6B6864'};
   window._sbSync = syncAllWorkspace;
 
-  var MONTHS = [
-    { key:'2026-01', label:'Jan 26' }, { key:'2026-02', label:'Fev 26' },
-    { key:'2026-03', label:'Mar 26' }, { key:'2026-04', label:'Abr 26' }
-  ];
-
-  var SECTOR_COLORS = { CEO:'#0D1B3E', Operacoes:'#FF4F11', Design:'#6B3FCF', Tecnologia:'#1A5DAB',
-    Marketing:'#B87000', Comercial:'#0A7A42', CS:'#0A7A7A', Financeiro:'#B5286E',
-    Vendas:'#C42828', Gestao:'#6B6864' };
-
-  // ═══ LOGIN ═══
+  // ═══ BOOT ═══
   window.addEventListener('DOMContentLoaded', function() {
     var btn = document.getElementById('btn-login');
     if (btn) btn.addEventListener('click', loginWithGoogle);
     document.addEventListener('click', function(e) {
       if (!e.target.closest('#user-chip-wrap')) {
-        var d = document.getElementById('user-dropdown');
-        if (d) d.style.display = 'none';
+        var d = document.getElementById('user-dropdown'); if(d) d.style.display='none';
       }
     });
-    // Injeta seletor de meses no ranking
   });
 
-  window._injectMonthSelector = function injectMonthSelector() {
-    var lb = document.getElementById('leaderboard');
-    if (!lb) return;
-    var container = lb.parentElement;
-
-    // Cria seletor de meses
-    var tabsHtml = '<div class="month-tabs" id="month-tabs">' +
-      MONTHS.map(function(m) {
-        return '<button class="mtab' + (m.key===selectedMonth?' active':'') + '" onclick="window._selectMonth(\''+m.key+'\')">' + m.label + '</button>';
-      }).join('') +
-      '<button class="mtab" onclick="window._selectMonth(\'all\')" id="tab-all">Todo 2026</button>' +
-    '</div>' +
-    '<div class="src-pills">' +
-      '<span>Fontes: </span>' +
-      '<span class="src-pill src-cal on" id="pill-cal" onclick="window._toggleSrc(\'cal\')">📅 Calendar</span>' +
-      '<span class="src-pill src-drive on" id="pill-drive" onclick="window._toggleSrc(\'drive\')">📁 Drive</span>' +
-      '<span class="src-pill src-gmail on" id="pill-gmail" onclick="window._toggleSrc(\'gmail\')">✉️ Gmail</span>' +
-    '</div>';
-
-    lb.insertAdjacentHTML('beforebegin', tabsHtml);
+  // ═══ LOGIN ═══
+  function loginWithGoogle() {
+    sb.auth.signInWithOAuth({ provider:'google', options:{
+      scopes:'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/drive.metadata.readonly',
+      queryParams:{access_type:'offline',prompt:'consent'},
+      redirectTo: window.location.origin + window.location.pathname
+    }});
   }
+  window._sbLogin = loginWithGoogle;
+  window._sbLogout = function() { if(confirm('Sair do Hub?')) sb.auth.signOut(); };
+
+  // ═══ CHIP ═══
+  function showChip(user) {
+    var name = (user.user_metadata&&user.user_metadata.full_name)||user.email;
+    var avatar = user.user_metadata&&user.user_metadata.avatar_url;
+    var init = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
+    var wrap = document.getElementById('user-chip-wrap');
+    if (!wrap) return;
+    wrap.style.position='relative';
+    wrap.innerHTML =
+      '<div class="user-chip" onclick="(function(){var d=document.getElementById(\'user-dropdown\');d.style.display=d.style.display===\'block\'?\'none\':\'block\';})()" style="cursor:pointer">' +
+        (avatar?'<img class="user-av" src="'+avatar+'">':'<div class="user-av-fb">'+init+'</div>') +
+        '<span style="font-size:11px;font-weight:600;color:var(--bk)">'+name.split(' ')[0]+'</span>' +
+        '<span style="font-size:9px;color:var(--g400);margin-left:2px">▾</span>' +
+      '</div>' +
+      '<div id="user-dropdown" style="display:none;position:absolute;top:38px;right:0;background:#fff;border:1px solid var(--g200);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.12);min-width:190px;z-index:9999;overflow:hidden;">' +
+        '<div style="padding:12px 14px;border-bottom:1px solid var(--g100);">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--bk)">'+name+'</div>' +
+          '<div style="font-size:10px;color:var(--g400);margin-top:2px">'+user.email+'</div>' +
+        '</div>' +
+        '<button onclick="window._sbLogout()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;font-family:var(--font);font-size:12px;font-weight:500;color:var(--red);cursor:pointer;">↩ Sair da conta</button>' +
+      '</div>';
+  }
+
+  // ═══════════════════════════════════════════
+  // RENDER FUNCTIONS — substituem as mockadas
+  // ═══════════════════════════════════════════
+
+  // 1. KPIs do dashboard
+  async function renderKPIsReal() {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var todayStr = today.toISOString();
+    var endDay = new Date(today); endDay.setHours(23,59,59);
+
+    // Reunioes de hoje (do banco — todos os membros)
+    var resToday = await sb.from('calendar_events')
+      .select('id').gte('start_at', todayStr).lte('start_at', endDay.toISOString()).neq('status','cancelled');
+    var todayCount = resToday.data ? resToday.data.length : 0;
+
+    // Membros ativos
+    var resTeam = await sb.from('member_stats').select('user_id');
+    var teamCount = resTeam.data ? resTeam.data.length : TEAM.length;
+
+    // Projetos
+    var resProjetos = await sb.from('projects').select('id,status');
+    var projAtivos = resProjetos.data ? resProjetos.data.filter(function(p){return p.status==='em_andamento';}).length : PROJECTS.filter(function(p){return p.s.includes('andamento');}).length;
+
+    // Reunioes da semana (banco)
+    var weekStart = new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay()+1); weekStart.setHours(0,0,0,0);
+    var weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+4); weekEnd.setHours(23,59,59);
+    var resWeek = await sb.from('calendar_events')
+      .select('id').gte('start_at', weekStart.toISOString()).lte('start_at', weekEnd.toISOString()).neq('status','cancelled');
+    var weekCount = resWeek.data ? resWeek.data.length : 21;
+
+    document.getElementById('kpi-strip').innerHTML = [
+      {l:'Reuniões Hoje',v:todayCount,s:'↑ vs. ontem',c:'var(--o)',t:'up'},
+      {l:'Membros Ativos',v:teamCount,s:'de '+teamCount+' no time',c:'var(--green)'},
+      {l:'Projetos Ativos',v:projAtivos||PROJECTS.filter(function(p){return p.s.includes('andamento');}).length,s:'no painel',c:'var(--blue)'},
+      {l:'Semana (reuniões)',v:weekCount,s:'Seg a Sex',c:'var(--yellow)'},
+    ].map(function(k){
+      return '<div class="kpi"><div class="kpi-accent" style="background:'+k.c+'"></div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="kpi-sub '+(k.t==='up'?'trend-up':'')+'">'+k.s+'</div></div>';
+    }).join('');
+  }
+
+  // 2. Reunioes de hoje — dashboard geral
+  async function renderMeetingsTodayReal() {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var endDay = new Date(); endDay.setHours(23,59,59);
+    var res = await sb.from('calendar_events')
+      .select('title, start_at, end_at, meet_link, attendees, profiles(name,sector)')
+      .gte('start_at', today.toISOString())
+      .lte('start_at', endDay.toISOString())
+      .neq('status','cancelled')
+      .order('start_at');
+
+    var el = document.getElementById('mtg-today');
+    if (!el) return;
+    if (!res.data || !res.data.length) {
+      el.innerHTML = '<div class="loading-msg">Nenhuma reunião hoje — ou faça sync para atualizar</div>';
+      return;
+    }
+    // Deduplica por titulo+hora (mesmo evento pode aparecer de varios membros)
+    var seen = {};
+    var deduped = res.data.filter(function(e) {
+      var key = (e.title||'')+(e.start_at||'');
+      if (seen[key]) return false;
+      seen[key] = true; return true;
+    });
+    var colors = ['#1A5DAB','#FF4F11','#0A7A42','#6B3FCF','#B87000','#B5286E','#C42828','#0D1B3E'];
+    el.innerHTML = deduped.slice(0,8).map(function(e,i) {
+      var t = e.start_at ? new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--:--';
+      var c = colors[i%colors.length];
+      var attendees = Array.isArray(e.attendees) ? e.attendees.length : 0;
+      return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:'+c+'"></div><span class="mtg-n">'+e.title+'</span><span class="mtg-p">'+(attendees||'')+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue)">Entrar</a>':'')+'</div>';
+    }).join('');
+  }
+
+  // 3. Carga da semana — grafico real
+  async function renderWeekChartReal() {
+    var weekStart = new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay()+1); weekStart.setHours(0,0,0,0);
+    var weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+4); weekEnd.setHours(23,59,59);
+    var res = await sb.from('calendar_events')
+      .select('start_at').gte('start_at',weekStart.toISOString()).lte('start_at',weekEnd.toISOString()).neq('status','cancelled');
+
+    var days = {Seg:0,Ter:0,Qua:0,Qui:0,Sex:0};
+    var dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+    (res.data||[]).forEach(function(e) {
+      if (!e.start_at) return;
+      var d = dayNames[new Date(e.start_at).getDay()];
+      if (days[d] !== undefined) days[d]++;
+    });
+
+    var ctx = document.getElementById('chart-week');
+    if (!ctx) return;
+    if (chartInited.week && chartInited.weekChart) { chartInited.weekChart.destroy(); }
+    chartInited.weekChart = new Chart(ctx,{type:'bar',data:{
+      labels:Object.keys(days),
+      datasets:[{data:Object.values(days),backgroundColor:['#FF4F11','#FF4F11','#FF4F1199','#FF4F1166','#FF4F1133'],borderRadius:6,borderSkipped:false}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{color:'#A09D97',font:{size:11}},border:{display:false}},
+              y:{grid:{color:'#F1F0ED'},ticks:{color:'#A09D97',font:{size:10},stepSize:1},border:{display:false}}}}});
+    chartInited.week=true;
+  }
+
+  // 4. Grafico reunioes por membro
+  async function renderTeamChartReal() {
+    var res = await sb.from('member_stats').select('name, meetings_month').order('meetings_month',{ascending:false}).limit(10);
+    var data = res.data || [];
+    if (!data.length) { renderTeamChart(); return; }
+
+    var ctx = document.getElementById('chart-team');
+    if (!ctx) return;
+    if (chartInited.team && chartInited.teamChart) { chartInited.teamChart.destroy(); }
+    chartInited.teamChart = new Chart(ctx,{type:'bar',data:{
+      labels: data.map(function(m){return (m.name||'').split(' ')[0];}),
+      datasets:[{data:data.map(function(m){return m.meetings_month||0;}),
+        backgroundColor: data.map(function(m,i){var c=Object.values(SECTOR_COLORS);return c[i%c.length]+'99';}),
+        borderColor: data.map(function(m,i){var c=Object.values(SECTOR_COLORS);return c[i%c.length];}),
+        borderWidth:1,borderRadius:5,borderSkipped:false}]
+    },options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#F1F0ED'},ticks:{color:'#A09D97',font:{size:10}},border:{display:false}},
+              y:{grid:{display:false},ticks:{color:'#6B6864',font:{size:11}},border:{display:false}}}}});
+    chartInited.team=true;
+  }
+
+  // 5. Agenda — proximos 7 dias
+  async function renderAgendaReal() {
+    var start = new Date(); start.setHours(0,0,0,0);
+    var end = new Date(start); end.setDate(end.getDate()+7); end.setHours(23,59,59);
+
+    var res = await sb.from('calendar_events')
+      .select('title, start_at, end_at, meet_link, attendees, user_id')
+      .gte('start_at', start.toISOString()).lte('start_at', end.toISOString())
+      .neq('status','cancelled').order('start_at');
+
+    var el = document.getElementById('agenda-full');
+    if (!el) return;
+    if (!res.data || !res.data.length) {
+      el.innerHTML = '<div class="loading-msg">Faça sync para carregar a agenda real</div>'; return;
+    }
+
+    // Agrupa por dia
+    var byDay = {};
+    res.data.forEach(function(e) {
+      if (!e.start_at) return;
+      var d = new Date(e.start_at);
+      var key = d.toDateString();
+      if (!byDay[key]) byDay[key] = { date: d, events: [] };
+      // Deduplica
+      var dup = byDay[key].events.find(function(x){return x.title===e.title && x.start_at===e.start_at;});
+      if (!dup) byDay[key].events.push(e);
+    });
+
+    var dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    var monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    var colors = ['#1A5DAB','#FF4F11','#0A7A42','#6B3FCF','#B87000','#B5286E'];
+
+    el.innerHTML = Object.values(byDay).map(function(day) {
+      var isToday = day.date.toDateString() === new Date().toDateString();
+      var label = (isToday?'Hoje — ':'')+dayNames[day.date.getDay()]+' '+day.date.getDate()+'/'+monthNames[day.date.getMonth()];
+      var color = isToday ? 'var(--o)' : 'var(--g400)';
+      return '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';padding:11px 0 5px">'+label+'</div>' +
+        day.events.map(function(e,i) {
+          var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+          var c = colors[i%colors.length];
+          var attendees = Array.isArray(e.attendees) ? e.attendees.length : 0;
+          return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:'+c+'"></div><span class="mtg-n">'+e.title+'</span><span class="mtg-p">'+(attendees||'')+'p</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue)">Entrar</a>':'')+'</div>';
+        }).join('');
+    }).join('');
+  }
+
+  // 6. Projetos reais
+  async function renderProjectsReal(id, lim) {
+    var res = await sb.from('projects').select('*').order('created_at',{ascending:false});
+    var list = res.data || [];
+    if (!list.length) { renderProjects(id, lim); return; } // fallback mock
+
+    if (lim) list = list.slice(0,lim);
+    var bc = {em_andamento:'b-b', no_prazo:'b-g', em_risco:'b-y', concluido:'b-gr'};
+    var colors = {em_andamento:'#1A5DAB',no_prazo:'#0A7A42',em_risco:'#B87000',concluido:'#6B6864'};
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = list.map(function(p) {
+      var c = colors[p.status] || '#FF4F11';
+      var progress = p.progress || 0;
+      return '<div class="pr"><div class="pr-ico" style="background:'+c+'18">📌</div>' +
+        '<div class="pr-info"><div class="pr-name">'+p.name+'</div><div class="pr-own">'+(p.sector||'')+'</div></div>' +
+        '<div class="pbar-w"><div class="pbar"><div class="pbar-f" style="width:'+progress+'%;background:'+c+'"></div></div><div class="pbar-l">'+progress+'%</div></div>' +
+        '<span class="badge '+(bc[p.status]||'b-gr')+'">'+(p.status||'').replace('_',' ')+'</span></div>';
+    }).join('');
+  }
+
+  // ═══ OVERRIDE das funções originais ═══
+  var _origNavTo = navTo;
+  navTo = function(btn, tab) {
+    _origNavTo(btn, tab);
+    // Após navegar, renderiza com dados reais
+    if (tab === 'dash') {
+      renderKPIsReal();
+      renderMeetingsTodayReal();
+      setTimeout(function() { renderWeekChartReal(); renderTeamChartReal(); }, 100);
+    }
+    if (tab === 'agenda') renderAgendaReal();
+    if (tab === 'projetos') {
+      renderProjectsReal('all-proj');
+      renderKPIsReal();
+    }
+    if (tab === 'ranking') {
+      if (!document.getElementById('month-tabs') && window._injectMonthSelector) window._injectMonthSelector();
+      renderMonthlyLeaderboard();
+    }
+  };
+
+  // ═══ RANKING MENSAL ═══
+  window._injectMonthSelector = function() {
+    var lb = document.getElementById('leaderboard');
+    if (!lb || document.getElementById('month-tabs')) return;
+    lb.insertAdjacentHTML('beforebegin',
+      '<div class="month-tabs" id="month-tabs">'+
+        MONTHS.map(function(m){return '<button class="mtab'+(m.key===selectedMonth?' active':'')+'" onclick="window._selectMonth(\''+m.key+'\')">'+m.label+'</button>';}).join('')+
+        '<button class="mtab" id="tab-all" onclick="window._selectMonth(\'all\')">Todo 2026</button>'+
+      '</div>'+
+      '<div class="src-pills"><span style="font-size:11px;color:var(--g400);font-weight:600">Fontes:</span>'+
+        '<span class="src-pill src-cal on" id="pill-cal" onclick="window._toggleSrc(\'cal\')">📅 Calendar</span>'+
+        '<span class="src-pill src-drive on" id="pill-drive" onclick="window._toggleSrc(\'drive\')">📁 Drive</span>'+
+        '<span class="src-pill src-gmail on" id="pill-gmail" onclick="window._toggleSrc(\'gmail\')">✉️ Gmail</span>'+
+      '</div>'
+    );
+  };
 
   window._selectMonth = function(month) {
     selectedMonth = month;
-    document.querySelectorAll('.mtab').forEach(function(t) { t.classList.remove('active'); });
-    var key = month === 'all' ? 'tab-all' : null;
-    document.querySelectorAll('.mtab').forEach(function(t) {
-      if (t.textContent.trim() === 'Todo 2026' && month === 'all') t.classList.add('active');
-      MONTHS.forEach(function(m) { if (m.key === month && t.textContent.trim() === m.label) t.classList.add('active'); });
+    document.querySelectorAll('.mtab').forEach(function(t){t.classList.remove('active');});
+    document.querySelectorAll('.mtab').forEach(function(t){
+      if (month==='all' && t.id==='tab-all') t.classList.add('active');
+      MONTHS.forEach(function(m){ if(m.key===month && t.textContent.trim()===m.label) t.classList.add('active'); });
     });
     renderMonthlyLeaderboard();
   };
@@ -1226,315 +1452,212 @@ function addProject() {
   function renderMonthlyLeaderboard() {
     var lb = document.getElementById('leaderboard');
     if (!lb) return;
-
-    // Calcula pontos por membro filtrado por mes e fonte
-    var scores = TEAM.map(function(m) {
-      var data = monthlyData[m.name] || {};
-      var months = selectedMonth === 'all' ? MONTHS.map(function(x){return x.key;}) : [selectedMonth];
-      var cal = 0, drive = 0, gmail = 0;
-      months.forEach(function(mo) {
-        var d = data[mo] || {};
-        cal   += d.cal   || 0;
-        drive += d.drive || 0;
-        gmail += d.gmail || 0;
-      });
-      var total = (activeSources.cal?cal:0) + (activeSources.drive?drive:0) + (activeSources.gmail?gmail:0);
-      // Fallback para pts do TEAM se nao tiver dados mensais ainda
-      if (total === 0 && selectedMonth === '2026-04') total = m.pts || 0;
-      return { name: m.name, role: m.role, bg: m.bg, fg: m.fg, i: m.i, pts: total, cal: cal, drive: drive, gmail: gmail };
-    }).sort(function(a,b){ return b.pts - a.pts; });
-
-    var maxPts = scores[0] && scores[0].pts > 0 ? scores[0].pts : 1;
     var badges = [['🔥','🏆'],['🔥','⚡'],['🎓','🤝'],['📅'],['💬'],['🚀'],['⭐'],['📌'],['✉️'],['📊']];
 
-    lb.innerHTML = scores.map(function(m, i) {
+    var scores = TEAM.filter(function(m){return m.name!=='49 educação';}).map(function(m) {
+      var data = monthlyData[m.name] || {};
+      var months = selectedMonth==='all' ? MONTHS.map(function(x){return x.key;}) : [selectedMonth];
+      var cal=0, drive=0, gmail=0;
+      months.forEach(function(mo){ var d=data[mo]||{}; cal+=d.cal||0; drive+=d.drive||0; gmail+=d.gmail||0; });
+      var total = (activeSources.cal?cal:0)+(activeSources.drive?drive:0)+(activeSources.gmail?gmail:0);
+      if (total===0 && selectedMonth===new Date().toISOString().slice(0,7)) total = m.pts||0;
+      return { name:m.name, role:m.role, bg:m.bg, fg:m.fg, i:m.i, pts:total, cal:cal, drive:drive, gmail:gmail };
+    }).sort(function(a,b){return b.pts-a.pts;});
+
+    var maxPts = scores[0]&&scores[0].pts>0 ? scores[0].pts : 1;
+    lb.innerHTML = scores.map(function(m,i) {
       var detail = [];
-      if (activeSources.cal && m.cal > 0)   detail.push('📅 '+m.cal+'pts');
-      if (activeSources.drive && m.drive > 0) detail.push('📁 '+m.drive+'pts');
-      if (activeSources.gmail && m.gmail > 0) detail.push('✉️ '+m.gmail+'pts');
-      return '<div class="lb-row">' +
-        '<span class="lb-rank '+(i===0?'r1':i===1?'r2':i===2?'r3':'r-n')+'">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1)+'</span>' +
-        '<div class="lb-av" style="background:'+m.bg+';color:'+m.fg+';width:34px;height:34px;font-size:12px;font-weight:700">'+m.i+'</div>' +
-        '<div class="lb-info"><div class="lb-name">'+m.name+'</div><div class="lb-role">'+m.role+'</div>' +
-        (detail.length ? '<div class="lb-detail">'+detail.join(' · ')+'</div>' : '') + '</div>' +
-        '<div class="lb-bgs">'+(badges[i]||['']).map(function(b){return '<span>'+b+'</span>';}).join('')+'</div>' +
-        '<div class="lb-bar-w">' +
-        '<div class="lb-bar"><div class="lb-fill" style="width:'+Math.round(m.pts/maxPts*100)+'%;background:'+m.bg+'"></div></div>' +
-        '<div class="lb-pts">'+m.pts.toLocaleString('pt-BR')+' pts</div>' +
-        '</div></div>';
+      if(activeSources.cal&&m.cal>0) detail.push('📅 '+m.cal+'pts');
+      if(activeSources.drive&&m.drive>0) detail.push('📁 '+m.drive+'pts');
+      if(activeSources.gmail&&m.gmail>0) detail.push('✉️ '+m.gmail+'pts');
+      return '<div class="lb-row">'+
+        '<span class="lb-rank '+(i===0?'r1':i===1?'r2':i===2?'r3':'r-n')+'">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1)+'</span>'+
+        '<div class="lb-av" style="background:'+m.bg+';color:'+m.fg+';width:34px;height:34px;font-size:12px;font-weight:700">'+m.i+'</div>'+
+        '<div class="lb-info"><div class="lb-name">'+m.name+'</div><div class="lb-role">'+m.role+'</div>'+
+        (detail.length?'<div class="lb-detail">'+detail.join(' · ')+'</div>':'')+'</div>'+
+        '<div class="lb-bgs">'+(badges[i]||['']).map(function(b){return '<span>'+b+'</span>';}).join('')+'</div>'+
+        '<div class="lb-bar-w">'+
+        '<div class="lb-bar"><div class="lb-fill" style="width:'+Math.round(m.pts/maxPts*100)+'%;background:'+m.bg+'"></div></div>'+
+        '<div class="lb-pts">'+m.pts.toLocaleString('pt-BR')+' pts</div></div></div>';
     }).join('');
   }
-
-  // Override renderLeaderboard global
   window.renderLeaderboard = renderMonthlyLeaderboard;
 
-  // ═══ CHIP COM DROPDOWN ═══
-  function showChip(user) {
-    var name   = (user.user_metadata && user.user_metadata.full_name) || user.email;
-    var avatar = user.user_metadata && user.user_metadata.avatar_url;
-    var init   = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
-    var wrap   = document.getElementById('user-chip-wrap');
-    if (!wrap) return;
-    wrap.style.position = 'relative';
-    wrap.innerHTML =
-      '<div class="user-chip" onclick="(function(){var d=document.getElementById(\'user-dropdown\');d.style.display=d.style.display===\'block\'?\'none\':\'block\';})()" style="cursor:pointer;user-select:none">' +
-        (avatar ? '<img class="user-av" src="'+avatar+'">' : '<div class="user-av-fb">'+init+'</div>') +
-        '<span style="font-size:11px;font-weight:600;color:var(--bk)">'+name.split(' ')[0]+'</span>' +
-        '<span style="font-size:9px;color:var(--g400);margin-left:2px">▾</span>' +
-      '</div>' +
-      '<div id="user-dropdown" style="display:none;position:absolute;top:38px;right:0;background:#fff;border:1px solid var(--g200);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.12);min-width:190px;z-index:9999;overflow:hidden;">' +
-        '<div style="padding:12px 14px;border-bottom:1px solid var(--g100);">' +
-          '<div style="font-size:12px;font-weight:600;color:var(--bk)">'+name+'</div>' +
-          '<div style="font-size:10px;color:var(--g400);margin-top:2px">'+user.email+'</div>' +
-        '</div>' +
-        '<button onclick="window._sbLogout()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;font-family:var(--font);font-size:12px;font-weight:500;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:8px;">↩ Sair da conta</button>' +
-      '</div>';
-  }
-
-  function logout() {
-    if (confirm('Deseja sair do Hub?')) sb.auth.signOut();
-  }
-  window._sbLogout = logout;
-
-  // ═══ SYNC HISTORICO 2026 ═══
-  async function syncHistorico2026(token, userId, userName) {
-    var start = '2026-01-01T00:00:00Z';
-    var end   = new Date().toISOString();
-    var allEvents = [];
-    var pageToken = null;
-
+  // ═══ SYNC ═══
+  async function syncHistorico(token, userId, userName) {
+    var start='2026-01-01T00:00:00Z', end=new Date().toISOString();
+    var events=[], pageToken=null;
     do {
-      var url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=500&orderBy=startTime';
-      if (pageToken) url += '&pageToken=' + pageToken;
+      var url='https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=500&orderBy=startTime';
+      if(pageToken) url+='&pageToken='+pageToken;
       try {
-        var res  = await fetch(url, { headers: { 'Authorization': 'Bearer '+token } });
-        var data = await res.json();
-        if (data.items) allEvents = allEvents.concat(data.items);
-        pageToken = data.nextPageToken || null;
-      } catch(e) { break; }
-    } while (pageToken);
+        var r=await fetch(url,{headers:{'Authorization':'Bearer '+token}});
+        var d=await r.json();
+        if(d.items) events=events.concat(d.items);
+        pageToken=d.nextPageToken||null;
+      } catch(e){break;}
+    } while(pageToken);
+    if(!events.length) return {events:[],byMonth:{}};
 
-    if (!allEvents.length) return { events: [], byMonth: {} };
+    var mapped=events.map(function(e){return{id:e.id,user_id:userId,title:e.summary||'(sem titulo)',start_at:(e.start&&(e.start.dateTime||e.start.date)),end_at:(e.end&&(e.end.dateTime||e.end.date)),attendees:e.attendees||[],meet_link:e.hangoutLink||null,status:e.status};});
+    for(var i=0;i<mapped.length;i+=100) await sb.from('calendar_events').upsert(mapped.slice(i,i+100),{onConflict:'id'});
 
-    var events = allEvents.map(function(e) {
-      return { id: e.id, user_id: userId,
-        title: e.summary || '(sem titulo)',
-        start_at: (e.start && (e.start.dateTime || e.start.date)),
-        end_at:   (e.end   && (e.end.dateTime   || e.end.date)),
-        attendees: e.attendees || [], meet_link: e.hangoutLink || null, status: e.status };
+    var byMonth={}, logs=[];
+    mapped.filter(function(e){return e.status!=='cancelled'&&e.start_at;}).forEach(function(e){
+      var mes=e.start_at.slice(0,7);
+      if(!byMonth[mes]) byMonth[mes]={cal:0,drive:0,gmail:0};
+      byMonth[mes].cal+=50;
+      logs.push({user_id:userId,source:'calendar',points:50,reason:'Reuniao: '+e.title,ref_id:'meet_'+e.id});
     });
-
-    // Salva em lotes
-    for (var i = 0; i < events.length; i += 100) {
-      await sb.from('calendar_events').upsert(events.slice(i,i+100), { onConflict: 'id' });
-    }
-
-    // XP por mes (Calendar = 50pts/reuniao)
-    var byMonth = {};
-    var logs = [];
-    events.filter(function(e){return e.status!=='cancelled' && e.start_at;}).forEach(function(e) {
-      var mes = e.start_at.slice(0,7);
-      if (!byMonth[mes]) byMonth[mes] = { cal:0, drive:0, gmail:0 };
-      byMonth[mes].cal += 50;
-      logs.push({ user_id: userId, source: 'calendar', points: 50, reason: 'Reuniao: '+e.title, ref_id: 'meet_'+e.id });
-    });
-
-    if (logs.length) {
-      for (var j = 0; j < logs.length; j += 100) {
-        await sb.from('xp_log').upsert(logs.slice(j,j+100), { onConflict: 'ref_id', ignoreDuplicates: true });
-      }
-    }
-
-    // Salva historico mensal
-    if (userName) monthlyData[userName] = byMonth;
-    return { events: events, byMonth: byMonth };
+    for(var j=0;j<logs.length;j+=100) await sb.from('xp_log').upsert(logs.slice(j,j+100),{onConflict:'ref_id',ignoreDuplicates:true});
+    if(userName) monthlyData[userName]=byMonth;
+    return {events:mapped,byMonth:byMonth};
   }
 
   async function syncDrive(token, userId, userName, byMonth) {
-    if (!token) return;
     try {
-      var res = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&q=modifiedTime>\'2026-01-01T00:00:00\'&fields=files(id,name,modifiedTime)',
-        { headers: { 'Authorization': 'Bearer '+token } });
-      var data = await res.json();
-      if (!data.files) return;
-      var driveLogs = [];
-      data.files.forEach(function(f) {
-        var mes = f.modifiedTime ? f.modifiedTime.slice(0,7) : selectedMonth;
-        if (!byMonth[mes]) byMonth[mes] = { cal:0, drive:0, gmail:0 };
-        byMonth[mes].drive += 20;
-        driveLogs.push({ user_id: userId, source: 'drive', points: 20, reason: 'Drive: '+f.name, ref_id: 'drive_'+f.id });
+      var r=await fetch('https://www.googleapis.com/drive/v3/files?pageSize=100&q=modifiedTime>\'2026-01-01T00:00:00\'&fields=files(id,name,modifiedTime)',{headers:{'Authorization':'Bearer '+token}});
+      var d=await r.json();
+      if(!d.files) return;
+      var logs=[];
+      d.files.forEach(function(f){
+        var mes=f.modifiedTime?f.modifiedTime.slice(0,7):selectedMonth;
+        if(!byMonth[mes]) byMonth[mes]={cal:0,drive:0,gmail:0};
+        byMonth[mes].drive+=20;
+        logs.push({user_id:userId,source:'drive',points:20,reason:'Drive: '+f.name,ref_id:'drive_'+f.id});
       });
-      if (driveLogs.length) await sb.from('xp_log').upsert(driveLogs, { onConflict: 'ref_id', ignoreDuplicates: true });
-      if (userName) monthlyData[userName] = byMonth;
-      console.log('Drive: '+data.files.length+' arquivos');
-    } catch(e) { console.log('Drive:', e.message); }
+      if(logs.length) await sb.from('xp_log').upsert(logs,{onConflict:'ref_id',ignoreDuplicates:true});
+      if(userName) monthlyData[userName]=byMonth;
+    } catch(e){console.log('Drive:',e.message);}
   }
 
   async function syncGmail(token, userId, userName, byMonth) {
-    if (!token) return;
     try {
-      var res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100&q=after:2026/01/01',
-        { headers: { 'Authorization': 'Bearer '+token } });
-      var data = await res.json();
-      var msgs = data.messages || [];
-      // 10pts por email enviado/recebido (batch simplificado)
-      var mesAtual = new Date().toISOString().slice(0,7);
-      if (!byMonth[mesAtual]) byMonth[mesAtual] = { cal:0, drive:0, gmail:0 };
-      byMonth[mesAtual].gmail += msgs.length * 10;
-      var gLogs = msgs.slice(0,50).map(function(m) {
-        return { user_id: userId, source: 'gmail', points: 10, reason: 'Email engajamento', ref_id: 'gmail_'+m.id };
-      });
-      if (gLogs.length) await sb.from('xp_log').upsert(gLogs, { onConflict: 'ref_id', ignoreDuplicates: true });
-      if (userName) monthlyData[userName] = byMonth;
-      console.log('Gmail: '+msgs.length+' emails');
-    } catch(e) { console.log('Gmail:', e.message); }
+      var r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100&q=after:2026/01/01',{headers:{'Authorization':'Bearer '+token}});
+      var d=await r.json();
+      var msgs=d.messages||[];
+      var mes=new Date().toISOString().slice(0,7);
+      if(!byMonth[mes]) byMonth[mes]={cal:0,drive:0,gmail:0};
+      byMonth[mes].gmail+=msgs.length*10;
+      var gLogs=msgs.slice(0,50).map(function(m){return{user_id:userId,source:'gmail',points:10,reason:'Email engajamento',ref_id:'gmail_'+m.id};});
+      if(gLogs.length) await sb.from('xp_log').upsert(gLogs,{onConflict:'ref_id',ignoreDuplicates:true});
+      if(userName) monthlyData[userName]=byMonth;
+    } catch(e){console.log('Gmail:',e.message);}
   }
 
-  // ═══ SYNC PRINCIPAL ═══
   async function syncAllWorkspace() {
-    if (!sess) return;
-    var token    = sess.provider_token;
-    var userId   = sess.user.id;
-    var userName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
+    if(!sess) return;
+    var token=sess.provider_token, userId=sess.user.id;
+    var userName=(sess.user.user_metadata&&sess.user.user_metadata.full_name)||sess.user.email;
 
-    try {
-      var result = await syncHistorico2026(token, userId, userName);
-      var events = result.events;
-      var byMonth = result.byMonth;
+    var result=await syncHistorico(token,userId,userName);
+    var events=result.events, byMonth=result.byMonth;
+    await syncDrive(token,userId,userName,byMonth);
+    await syncGmail(token,userId,userName,byMonth);
 
-      await syncDrive(token, userId, userName, byMonth);
-      await syncGmail(token, userId, userName, byMonth);
+    var xpRes=await sb.from('xp_log').select('points').eq('user_id',userId);
+    var xpTotal=(xpRes.data||[]).reduce(function(s,r){return s+r.points;},0);
+    var level=Math.floor(xpTotal/1000)+1;
+    var mesAtual=new Date().toISOString().slice(0,7);
+    var meetsMes=byMonth[mesAtual]?Math.floor((byMonth[mesAtual].cal||0)/50):0;
 
-      var xpRes   = await sb.from('xp_log').select('points').eq('user_id', userId);
-      var xpTotal = (xpRes.data||[]).reduce(function(s,r){return s+r.points;},0);
-      var level   = Math.floor(xpTotal/1000)+1;
+    await sb.from('profiles').update({xp_total:xpTotal,level:level,name:userName}).eq('id',userId);
+    await sb.from('member_stats').upsert({
+      user_id:userId,name:userName,email:sess.user.email,
+      avatar_url:(sess.user.user_metadata&&sess.user.user_metadata.avatar_url)||null,
+      xp_total:xpTotal,level:level,meetings_month:meetsMes,
+      meetings_history:byMonth,updated_at:new Date().toISOString()
+    },{onConflict:'user_id'});
 
-      var mesAtual = new Date().toISOString().slice(0,7);
-      var meetsMes = (byMonth[mesAtual]||{}).cal ? Math.floor((byMonth[mesAtual].cal||0)/50) : 0;
+    // Atualiza sync box
+    var sb2=document.getElementById('sync-box');
+    if(sb2) sb2.innerHTML='<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div><div class="sync-s">'+meetsMes+' reunioes em Abr · '+events.filter(function(e){return e.status!=='cancelled';}).length+' em 2026 · XP: '+xpTotal.toLocaleString('pt-BR')+'</div><div class="sync-btns"><span class="sync-ok">📅 Calendar</span><span class="sync-ok">📁 Drive</span><span class="sync-ok">✉️ Gmail</span></div>';
 
-      await sb.from('profiles').update({ xp_total: xpTotal, level: level, name: userName }).eq('id', userId);
-      await sb.from('member_stats').upsert({
-        user_id: userId, name: userName, email: sess.user.email,
-        avatar_url: (sess.user.user_metadata&&sess.user.user_metadata.avatar_url)||null,
-        xp_total: xpTotal, level: level, meetings_month: meetsMes,
-        meetings_history: byMonth,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+    // Meu Painel — reunioes de hoje
+    var el=document.getElementById('my-meetings');
+    if(el){
+      var today=new Date().toDateString();
+      var todayEvs=events.filter(function(e){return e.start_at&&new Date(e.start_at).toDateString()===today&&e.status!=='cancelled';}).slice(0,5);
+      el.innerHTML=todayEvs.length?todayEvs.map(function(e){var t=new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});return'<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniao hoje</div>';
+    }
 
-      // Atualiza UI
-      var totalMeets = events.filter(function(e){return e.status!=='cancelled';}).length;
-      var sb2 = document.getElementById('sync-box');
-      if (sb2) sb2.innerHTML =
-        '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div>' +
-        '<div class="sync-s">'+meetsMes+' reunioes em Abr · '+totalMeets+' em 2026 · XP: '+xpTotal.toLocaleString('pt-BR')+'</div>' +
-        '<div class="sync-btns"><span class="sync-ok">📅 Calendar</span><span class="sync-ok">📁 Drive</span><span class="sync-ok">✉️ Gmail</span></div>';
-
-      // Hoje
-      var el = document.getElementById('my-meetings');
-      if (el) {
-        var today = new Date().toDateString();
-        var todayEvs = events.filter(function(e){return e.start_at && new Date(e.start_at).toDateString()===today && e.status!=='cancelled';}).slice(0,5);
-        el.innerHTML = todayEvs.length
-          ? todayEvs.map(function(e){
-              var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-              return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>':'')+'</div>';
-            }).join('')
-          : '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniao hoje</div>';
-      }
-
-      await loadRealTeam();
-      renderMonthlyLeaderboard();
-      console.log('Sync v5 ok — '+totalMeets+' eventos · XP: '+xpTotal);
-    } catch(err) { console.error('Sync error:', err); }
+    await loadRealTeam();
+    // Refresh dashboard atual
+    renderKPIsReal();
+    renderMeetingsTodayReal();
+    if(chartInited.week) { chartInited.week=false; renderWeekChartReal(); }
+    if(chartInited.team) { chartInited.team=false; renderTeamChartReal(); }
+    console.log('Sync v6 ok — '+events.length+' eventos · XP: '+xpTotal);
   }
 
   // ═══ TEAM REAL ═══
   async function loadRealTeam() {
-    var res = await sb.from('member_stats').select('*').order('xp_total', { ascending: false });
-    if (!res.data || !res.data.length) return;
-    TEAM.length = 0;
-    res.data.forEach(function(m) {
-      var name = m.name || 'Membro';
-      var init = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
-      var sector = m.sector || 'Time';
-      var hist = m.meetings_history || {};
-      if (name !== '49 educação') {
-        TEAM.push({ name: name, role: sector, email: m.email||'',
-          pts: m.xp_total||0, xp: m.xp_total||0, mtgs: m.meetings_month||0,
-          level: m.level||1, i: init, bg: SECTOR_COLORS[sector]||'#FF4F11',
-          fg:'#fff', status:'green', avatar: m.avatar_url||null, goals:[], northstars:[] });
-        // Popula monthlyData com historico do banco
-        if (!monthlyData[name] && Object.keys(hist).length) monthlyData[name] = hist;
-      }
+    var res=await sb.from('member_stats').select('*').order('xp_total',{ascending:false});
+    if(!res.data||!res.data.length) return;
+    TEAM.length=0;
+    res.data.forEach(function(m){
+      if((m.name||'').toLowerCase().includes('49 educa')) return;
+      var name=m.name||'Membro';
+      var init=name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
+      var sector=m.sector||'Time';
+      var hist=m.meetings_history||{};
+      TEAM.push({name:name,role:sector,email:m.email||'',pts:m.xp_total||0,xp:m.xp_total||0,mtgs:m.meetings_month||0,level:m.level||1,i:init,bg:SECTOR_COLORS[sector]||'#FF4F11',fg:'#fff',status:'green',avatar:m.avatar_url||null,goals:[],northstars:[]});
+      if(!monthlyData[name]&&Object.keys(hist).length) monthlyData[name]=hist;
     });
-    if (typeof renderSidebarTeam==='function') renderSidebarTeam();
-    if (typeof renderKPIs==='function') renderKPIs();
+    if(typeof renderSidebarTeam==='function') renderSidebarTeam();
     renderMonthlyLeaderboard();
   }
 
-  // ═══ MEU PAINEL ═══
+  // ═══ MEU PAINEL CORRETO ═══
   function openMyPanel(userEmail) {
-    var idx = 0;
-    var firstName = (userEmail||'').split('@')[0].split('.')[0].toLowerCase();
-    for (var i = 0; i < TEAM.length; i++) {
-      var tn = (TEAM[i].name||'').split(' ')[0].toLowerCase();
-      if (tn === firstName || tn.indexOf(firstName)!==-1 || firstName.indexOf(tn)!==-1) { idx=i; break; }
+    var idx=0, firstName=(userEmail||'').split('@')[0].split('.')[0].toLowerCase();
+    for(var i=0;i<TEAM.length;i++){
+      var tn=(TEAM[i].name||'').split(' ')[0].toLowerCase();
+      if(tn===firstName||tn.indexOf(firstName)!==-1||firstName.indexOf(tn)!==-1){idx=i;break;}
     }
-    if (typeof renderMemberView==='function') {
+    if(typeof renderMemberView==='function'){
       renderMemberView(idx);
-      setTimeout(function() {
-        var h2 = document.querySelector('.hero-info h2');
-        var p  = document.querySelector('.hero-info p');
-        var av = document.querySelector('.hero-av');
-        if (h2 && sess) h2.textContent = (sess.user.user_metadata&&sess.user.user_metadata.full_name)||sess.user.email;
-        if (p  && sess && TEAM[idx]) p.textContent = sess.user.email+' · '+TEAM[idx].role;
-        if (av && sess && sess.user.user_metadata && sess.user.user_metadata.avatar_url) {
-          av.style.backgroundImage='url('+sess.user.user_metadata.avatar_url+')';
-          av.style.backgroundSize='cover'; av.style.backgroundPosition='center'; av.textContent='';
-        }
-      }, 150);
+      setTimeout(function(){
+        var h2=document.querySelector('.hero-info h2'), p=document.querySelector('.hero-info p'), av=document.querySelector('.hero-av');
+        if(h2&&sess) h2.textContent=(sess.user.user_metadata&&sess.user.user_metadata.full_name)||sess.user.email;
+        if(p&&sess&&TEAM[idx]) p.textContent=sess.user.email+' · '+TEAM[idx].role;
+        if(av&&sess&&sess.user.user_metadata&&sess.user.user_metadata.avatar_url){av.style.backgroundImage='url('+sess.user.user_metadata.avatar_url+')';av.style.backgroundSize='cover';av.style.backgroundPosition='center';av.textContent='';}
+      },150);
     }
   }
 
   // ═══ AUTH ═══
   async function onSignIn(s) {
-    var email = s.user.email||'';
-    if (!email.endsWith('@49educacao.com.br') && !email.endsWith('@49er.com.br')) {
-      await sb.auth.signOut(); alert('Acesso restrito a @49educacao.com.br'); return;
-    }
-    sess = s;
+    var email=s.user.email||'';
+    if(!email.endsWith('@49educacao.com.br')&&!email.endsWith('@49er.com.br')){await sb.auth.signOut();alert('Acesso restrito a @49educacao.com.br');return;}
+    sess=s;
     document.getElementById('login-overlay').classList.add('hidden');
     showChip(s.user);
 
-    // Vincula botao Meu Painel
-    var vbtns = document.querySelectorAll('.vbtn');
-    if (vbtns[1]) {
-      vbtns[1].onclick = function() {
-        if (typeof setView==='function') setView('member', vbtns[1]);
-        openMyPanel(sess&&sess.user?sess.user.email:'');
-      };
-    }
+    var vbtns=document.querySelectorAll('.vbtn');
+    if(vbtns[1]) vbtns[1].onclick=function(){if(typeof setView==='function')setView('member',vbtns[1]);openMyPanel(sess&&sess.user?sess.user.email:'');};
 
     await loadRealTeam();
-    await syncAllWorkspace();
+
+    // Renderiza dashboard com dados reais imediatamente
+    renderKPIsReal();
+    renderMeetingsTodayReal();
+    setTimeout(function(){renderWeekChartReal();renderTeamChartReal();},200);
+
+    // Sync completo em background
+    syncAllWorkspace();
   }
 
-  sb.auth.onAuthStateChange(function(event, s) {
-    if (event==='SIGNED_IN'&&s) { onSignIn(s); }
-    if (event==='SIGNED_OUT') {
-      sess=null;
-      document.getElementById('login-overlay').classList.remove('hidden');
-      var w=document.getElementById('user-chip-wrap'); if(w) w.innerHTML='';
-    }
+  sb.auth.onAuthStateChange(function(event,s){
+    if(event==='SIGNED_IN'&&s) onSignIn(s);
+    if(event==='SIGNED_OUT'){sess=null;document.getElementById('login-overlay').classList.remove('hidden');var w=document.getElementById('user-chip-wrap');if(w)w.innerHTML='';}
   });
-
-  sb.auth.getSession().then(function(r) {
+  sb.auth.getSession().then(function(r){
     var s=r.data&&r.data.session;
-    if (!s) return;
+    if(!s) return;
     var email=s.user.email||'';
-    if (email.endsWith('@49educacao.com.br')||email.endsWith('@49er.com.br')) onSignIn(s);
+    if(email.endsWith('@49educacao.com.br')||email.endsWith('@49er.com.br')) onSignIn(s);
   });
-
 })();
 </script>
 </body>

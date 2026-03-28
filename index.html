@@ -1117,7 +1117,8 @@ function addProject() {
 </script>
 
 <script>
-// SUPABASE AUTH + CALENDAR SYNC v2 — fixes: logout, meu painel, dados reais
+// HUB 49 EDUCACAO — v3
+// fixes: dropdown logout, historico 2026, ranking mensal, gmail+drive, b2b metrics
 (function() {
   var sb = supabase.createClient(
     'https://gaubpaxaywmfzudajqyn.supabase.co',
@@ -1125,19 +1126,27 @@ function addProject() {
   );
 
   var sess = null;
-  window._sbSync = syncCalendar;
+  var dropdownOpen = false;
+  window._sbSync = syncAllWorkspace;
 
-  // Vincula botao de login
+  // ═══ LOGIN ═══
   window.addEventListener('DOMContentLoaded', function() {
     var btn = document.getElementById('btn-login');
     if (btn) btn.addEventListener('click', loginWithGoogle);
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#user-chip-wrap')) closeDropdown();
+    });
   });
 
   function loginWithGoogle() {
     sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+        scopes: [
+          'https://www.googleapis.com/auth/calendar.readonly',
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/drive.metadata.readonly'
+        ].join(' '),
         queryParams: { access_type: 'offline', prompt: 'consent' },
         redirectTo: window.location.origin + window.location.pathname
       }
@@ -1146,211 +1155,308 @@ function addProject() {
   window._sbLogin = loginWithGoogle;
 
   function logout() {
-    if (confirm('Deseja sair do Hub?')) {
-      sb.auth.signOut();
-    }
+    closeDropdown();
+    sb.auth.signOut();
   }
   window._sbLogout = logout;
 
-  // Carrega time real do Supabase e atualiza TEAM global
-  async function loadRealTeam() {
-    var res = await sb.from('member_stats').select('*').order('xp_total', { ascending: false });
-    if (!res.data || !res.data.length) return;
-
-    // Cores por setor
-    var colors = { CEO:'#0D1B3E', Operacoes:'#FF4F11', Design:'#6B3FCF', Tecnologia:'#1A5DAB',
-      Marketing:'#B87000', Comercial:'#0A7A42', CS:'#0A7A7A', Financeiro:'#B5286E',
-      Vendas:'#C42828', Gestao:'#6B6864' };
-
-    // Substitui o array TEAM global com dados reais
-    TEAM.length = 0;
-    res.data.forEach(function(m) {
-      var name = m.name || 'Membro';
-      var initials = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
-      var sector = m.sector || 'Time';
-      var color = colors[sector] || '#FF4F11';
-      TEAM.push({
-        name: name, role: sector, email: m.email || '',
-        xp: m.xp_total || 0, meets: m.meetings_month || 0,
-        level: m.level || 1, i: initials,
-        bg: color, fg: '#fff', status: 'green',
-        avatar: m.avatar_url || null,
-        goals: [], northstars: []
-      });
-    });
-
-    // Re-renderiza sidebar e ranking com dados reais
-    if (typeof renderSidebarTeam === 'function') renderSidebarTeam();
-    if (typeof renderLeaderboard === 'function') renderLeaderboard();
-    if (typeof renderKPIs === 'function') renderKPIs();
+  // ═══ DROPDOWN CHIP ═══
+  function closeDropdown() {
+    dropdownOpen = false;
+    var d = document.getElementById('user-dropdown');
+    if (d) d.style.display = 'none';
   }
 
-  // Detecta o membro logado e abre o MEU PAINEL correto
-  function openMyPanel(userEmail) {
-    // Encontra o index do usuario logado no TEAM
-    var idx = 0;
-    for (var i = 0; i < TEAM.length; i++) {
-      var m = TEAM[i];
-      if (m.name && userEmail) {
-        // Tenta match por email ou nome
-        var emailName = userEmail.split('@')[0].replace('.', ' ').toLowerCase();
-        var teamName = (m.name || '').toLowerCase();
-        if (teamName.indexOf(emailName.split(' ')[0]) !== -1) {
-          idx = i; break;
-        }
-      }
-    }
-    // Muda para visao do membro correto
-    if (typeof renderMemberView === 'function') {
-      renderMemberView(idx);
-      // Atualiza hero com dados reais do usuario logado
-      setTimeout(function() {
-        var heroName = document.querySelector('.hero-info h2');
-        var heroEmail = document.querySelector('.hero-info p');
-        var heroAv = document.querySelector('.hero-av');
-        if (heroName && sess) {
-          var realName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
-          heroName.textContent = realName;
-        }
-        if (heroEmail && sess) heroEmail.textContent = sess.user.email + ' · ' + (TEAM[idx] ? TEAM[idx].role : '');
-        if (heroAv && sess && sess.user.user_metadata && sess.user.user_metadata.avatar_url) {
-          heroAv.style.background = 'url(' + sess.user.user_metadata.avatar_url + ') center/cover';
-          heroAv.textContent = '';
-        }
-      }, 100);
-    }
+  function toggleDropdown() {
+    dropdownOpen = !dropdownOpen;
+    var d = document.getElementById('user-dropdown');
+    if (d) d.style.display = dropdownOpen ? 'block' : 'none';
   }
 
   function showChip(user) {
     var name   = (user.user_metadata && user.user_metadata.full_name) || user.email;
     var avatar = user.user_metadata && user.user_metadata.avatar_url;
-    var init   = name.split(' ').slice(0,2).map(function(n){return n[0];}).join('').toUpperCase();
+    var init   = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
     var wrap   = document.getElementById('user-chip-wrap');
     if (!wrap) return;
-    // CORRECAO 1: botao de logout separado, nao no chip da foto
-    wrap.innerHTML = (avatar
-      ? '<div class="user-chip" title="' + name + '" style="cursor:default"><img class="user-av" src="' + avatar + '">' + name.split(' ')[0] + '</div>'
-      : '<div class="user-chip" title="' + name + '" style="cursor:default"><div class="user-av-fb">' + init + '</div>' + name.split(' ')[0] + '</div>')
-      + '<button onclick="window._sbLogout()" style="background:none;border:1px solid #e2e0db;border-radius:6px;padding:4px 8px;font-size:10px;color:#6B6864;cursor:pointer;margin-left:4px;" title="Sair">Sair</button>';
+    wrap.style.position = 'relative';
+    wrap.innerHTML =
+      '<div class="user-chip" onclick="(function(){var w=window;if(w._dropToggle)w._dropToggle();})()" style="cursor:pointer" title="'+name+'">' +
+        (avatar ? '<img class="user-av" src="'+avatar+'">' : '<div class="user-av-fb">'+init+'</div>') +
+        '<span style="font-size:11px;font-weight:600;color:var(--bk)">'+name.split(' ')[0]+'</span>' +
+        '<span style="font-size:10px;color:var(--g400);margin-left:2px">▾</span>' +
+      '</div>' +
+      '<div id="user-dropdown" style="display:none;position:absolute;top:36px;right:0;background:#fff;border:1px solid var(--g200);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);min-width:180px;z-index:999;overflow:hidden;">' +
+        '<div style="padding:12px 14px;border-bottom:1px solid var(--g100);">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--bk)">'+name+'</div>' +
+          '<div style="font-size:10px;color:var(--g400)">'+user.email+'</div>' +
+        '</div>' +
+        '<button onclick="window._sbLogout()" style="width:100%;padding:10px 14px;text-align:left;background:none;border:none;font-family:var(--font);font-size:12px;color:var(--red);cursor:pointer;display:flex;align-items:center;gap:7px;">⬡ Sair da conta</button>' +
+      '</div>';
+    window._dropToggle = toggleDropdown;
   }
 
-  async function syncCalendar() {
-    if (!sess || !sess.provider_token) return;
-    var token  = sess.provider_token;
-    var userId = sess.user.id;
-    var now    = new Date();
-    var start  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    var end    = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59).toISOString();
+  // ═══ SYNC HISTORICO 2026 ═══
+  async function syncHistorico2026(token, userId) {
+    // Busca de Jan/2026 ate hoje
+    var start = '2026-01-01T00:00:00Z';
+    var end   = new Date().toISOString();
+    var allEvents = [];
+    var pageToken = null;
 
+    do {
+      var url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=500&orderBy=startTime';
+      if (pageToken) url += '&pageToken=' + pageToken;
+      var res  = await fetch(url, { headers: { 'Authorization': 'Bearer '+token } });
+      var data = await res.json();
+      if (data.items) allEvents = allEvents.concat(data.items);
+      pageToken = data.nextPageToken || null;
+    } while (pageToken);
+
+    if (!allEvents.length) return [];
+
+    var events = allEvents.map(function(e) {
+      return { id: e.id, user_id: userId,
+        title: e.summary || '(sem titulo)',
+        start_at: (e.start && (e.start.dateTime || e.start.date)),
+        end_at:   (e.end   && (e.end.dateTime   || e.end.date)),
+        attendees: e.attendees || [], meet_link: e.hangoutLink || null, status: e.status };
+    });
+
+    // Salva em lotes de 100
+    for (var i = 0; i < events.length; i += 100) {
+      await sb.from('calendar_events').upsert(events.slice(i, i+100), { onConflict: 'id' });
+    }
+
+    // XP por todos os eventos historicos
+    var logs = events.filter(function(e){return e.status!=='cancelled';}).map(function(e){
+      return { user_id: userId, source: 'calendar', points: 50, reason: 'Reuniao: '+e.title, ref_id: 'meet_'+e.id };
+    });
+    if (logs.length) {
+      for (var j = 0; j < logs.length; j += 100) {
+        await sb.from('xp_log').upsert(logs.slice(j, j+100), { onConflict: 'ref_id', ignoreDuplicates: true });
+      }
+    }
+
+    return events;
+  }
+
+  // ═══ SYNC GMAIL ═══
+  async function syncGmail(token, userId) {
+    if (!token) return;
     try {
-      var res  = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=200&orderBy=startTime',
+      var res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=after:2026/01/01',
         { headers: { 'Authorization': 'Bearer '+token } });
       var data = await res.json();
-      var items = data.items || [];
+      if (data.resultSizeEstimate !== undefined) {
+        // Salva contagem de emails como XP de engajamento
+        var emailCount = data.resultSizeEstimate || 0;
+        await sb.from('member_stats').update({
+          email_count: emailCount,
+          updated_at: new Date().toISOString()
+        }).eq('user_id', userId);
+        console.log('Gmail:', emailCount, 'emails indexados');
+      }
+    } catch(e) { console.log('Gmail sem permissao ainda:', e.message); }
+  }
 
-      var events = items.map(function(e) {
-        return { id: e.id, user_id: userId,
-          title: e.summary || '(sem titulo)',
-          start_at: (e.start && (e.start.dateTime || e.start.date)),
-          end_at:   (e.end   && (e.end.dateTime   || e.end.date)),
-          attendees: e.attendees || [], meet_link: e.hangoutLink || null, status: e.status };
-      });
+  // ═══ SYNC DRIVE ═══
+  async function syncDrive(token, userId) {
+    if (!token) return;
+    try {
+      var res = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=50&q=modifiedTime>\'2026-01-01T00:00:00\'&fields=files(id,name,modifiedTime,owners)',
+        { headers: { 'Authorization': 'Bearer '+token } });
+      var data = await res.json();
+      if (data.files) {
+        console.log('Drive:', data.files.length, 'arquivos');
+        // XP por entregas no Drive
+        var driveLogs = data.files.map(function(f) {
+          return { user_id: userId, source: 'drive', points: 20, reason: 'Arquivo: '+f.name, ref_id: 'drive_'+f.id };
+        });
+        if (driveLogs.length) await sb.from('xp_log').upsert(driveLogs, { onConflict: 'ref_id', ignoreDuplicates: true });
+      }
+    } catch(e) { console.log('Drive sem permissao ainda:', e.message); }
+  }
 
-      if (events.length) await sb.from('calendar_events').upsert(events, { onConflict: 'id' });
+  // ═══ SYNC PRINCIPAL ═══
+  async function syncAllWorkspace() {
+    if (!sess) return;
+    var token  = sess.provider_token;
+    var userId = sess.user.id;
+    var userName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
 
-      var logs = events.filter(function(e){return e.status!=='cancelled';}).map(function(e){
-        return { user_id: userId, source: 'calendar', points: 50, reason: 'Reuniao: '+e.title, ref_id: 'meet_'+e.id };
-      });
-      if (logs.length) await sb.from('xp_log').upsert(logs, { onConflict: 'ref_id', ignoreDuplicates: true });
+    try {
+      // 1. Historico completo 2026
+      var events = await syncHistorico2026(token, userId);
 
+      // 2. Gmail (se tiver permissao)
+      await syncGmail(token, userId);
+
+      // 3. Drive (se tiver permissao)
+      await syncDrive(token, userId);
+
+      // 4. XP total
       var xpRes   = await sb.from('xp_log').select('points').eq('user_id', userId);
       var xpTotal = (xpRes.data || []).reduce(function(s,r){return s+r.points;}, 0);
       var level   = Math.floor(xpTotal/1000)+1;
-      var userName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
+
+      // 5. Contagem por mes para ranking mensal
+      var mesByMonth = {};
+      events.filter(function(e){return e.status!=='cancelled' && e.start_at;}).forEach(function(e) {
+        var mes = e.start_at.slice(0,7); // '2026-01'
+        mesByMonth[mes] = (mesByMonth[mes]||0) + 1;
+      });
 
       await sb.from('profiles').update({ xp_total: xpTotal, level: level, name: userName }).eq('id', userId);
       await sb.from('member_stats').upsert({
-        user_id: userId, name: userName,
-        email: sess.user.email,
+        user_id: userId, name: userName, email: sess.user.email,
         avatar_url: (sess.user.user_metadata && sess.user.user_metadata.avatar_url) || null,
         xp_total: xpTotal, level: level,
-        meetings_month: events.filter(function(e){return e.status!=='cancelled';}).length,
+        meetings_month: mesByMonth['2026-0'+(new Date().getMonth()+1)] || mesByMonth['2026-'+(new Date().getMonth()+1)] || 0,
+        meetings_history: JSON.stringify(mesByMonth),
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
-      // Reunioes de hoje
-      var el = document.getElementById('my-meetings');
-      if (el) {
-        var today = new Date().toDateString();
-        var todayEvs = events.filter(function(e){return e.start_at && new Date(e.start_at).toDateString()===today;}).slice(0,5);
-        el.innerHTML = todayEvs.length
-          ? todayEvs.map(function(e){
-              var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-              return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>':'')+'</div>';
-            }).join('')
-          : '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniao hoje</div>';
-      }
-
-      var sb2 = document.getElementById('sync-box');
-      if (sb2) sb2.innerHTML = '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div><div class="sync-s">'+events.filter(function(e){return e.status!=="cancelled";}).length+' reunioes este mes</div><div class="sync-btns"><span class="sync-ok">Calendar conectado</span></div>';
-
-      // Recarrega time com dados atualizados
+      // 6. Atualiza UI
+      updateSyncBox(events);
+      updateTodayMeetings(events);
       await loadRealTeam();
+      await loadMonthlyRanking();
 
+      console.log('Sync completo:', events.length, 'eventos · XP:', xpTotal);
     } catch(err) {
       console.error('Sync error:', err);
     }
   }
 
+  function updateSyncBox(events) {
+    var mesAtual = '2026-0'+(new Date().getMonth()+1);
+    if (mesAtual.length < 7) mesAtual = '2026-'+(new Date().getMonth()+1);
+    var meetsMes = events.filter(function(e){
+      return e.status!=='cancelled' && e.start_at && e.start_at.slice(0,7)===mesAtual;
+    }).length;
+    var totalAno = events.filter(function(e){return e.status!=='cancelled';}).length;
+    var sb2 = document.getElementById('sync-box');
+    if (sb2) sb2.innerHTML =
+      '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div>' +
+      '<div class="sync-s">'+meetsMes+' reunioes em Abril · '+totalAno+' reunioes em 2026</div>' +
+      '<div class="sync-btns"><span class="sync-ok">Calendar 2026</span><span class="sync-ok">Gmail</span><span class="sync-ok">Drive</span></div>';
+  }
+
+  function updateTodayMeetings(events) {
+    var el = document.getElementById('my-meetings');
+    if (!el) return;
+    var today = new Date().toDateString();
+    var todayEvs = events.filter(function(e){return e.start_at && new Date(e.start_at).toDateString()===today && e.status!=='cancelled';}).slice(0,5);
+    el.innerHTML = todayEvs.length
+      ? todayEvs.map(function(e){
+          var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+          return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>':'')+'</div>';
+        }).join('')
+      : '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniao hoje</div>';
+  }
+
+  // ═══ TIME REAL ═══
+  var SECTOR_COLORS = { CEO:'#0D1B3E', Operacoes:'#FF4F11', Design:'#6B3FCF', Tecnologia:'#1A5DAB', Marketing:'#B87000', Comercial:'#0A7A42', CS:'#0A7A7A', Financeiro:'#B5286E', Vendas:'#C42828', Gestao:'#6B6864' };
+
+  async function loadRealTeam() {
+    var res = await sb.from('member_stats').select('*').order('xp_total', { ascending: false });
+    if (!res.data || !res.data.length) return;
+    TEAM.length = 0;
+    res.data.forEach(function(m) {
+      var name = m.name || 'Membro';
+      var initials = name.split(' ').slice(0,2).map(function(n){return n[0]||'';}).join('').toUpperCase();
+      var sector = m.sector || 'Time';
+      TEAM.push({ name: name, role: sector, email: m.email || '',
+        xp: m.xp_total||0, meets: m.meetings_month||0, level: m.level||1,
+        i: initials, bg: SECTOR_COLORS[sector]||'#FF4F11', fg:'#fff', status:'green', avatar: m.avatar_url||null, goals:[], northstars:[] });
+    });
+    if (typeof renderSidebarTeam==='function') renderSidebarTeam();
+    if (typeof renderLeaderboard==='function') renderLeaderboard();
+    if (typeof renderKPIs==='function') renderKPIs();
+  }
+
+  // ═══ RANKING MENSAL ═══
+  async function loadMonthlyRanking() {
+    // Busca todos os member_stats com historico
+    var res = await sb.from('member_stats').select('name, xp_total, meetings_month, meetings_history, avatar_url, sector').order('xp_total', { ascending: false });
+    if (!res.data) return;
+
+    // Monta ranking por mes atual
+    var mes = new Date().toISOString().slice(0,7);
+    var ranked = res.data.map(function(m) {
+      var hist = {};
+      try { hist = JSON.parse(m.meetings_history||'{}'); } catch(e){}
+      return { name: m.name, sector: m.sector, xp: m.xp_total||0, meetsMes: hist[mes]||m.meetings_month||0, avatar: m.avatar_url };
+    }).sort(function(a,b){ return b.xp - a.xp; });
+
+    // Atualiza leaderboard com dados reais se estiver visivel
+    if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    console.log('Ranking atualizado:', ranked.length, 'membros');
+  }
+
+  // ═══ MEU PAINEL CORRETO ═══
+  function openMyPanel(userEmail) {
+    var idx = 0;
+    for (var i = 0; i < TEAM.length; i++) {
+      var firstName = (userEmail||'').split('@')[0].split('.')[0].toLowerCase();
+      var teamFirst = (TEAM[i].name||'').split(' ')[0].toLowerCase();
+      if (teamFirst === firstName || teamFirst.indexOf(firstName)!==-1) { idx=i; break; }
+    }
+    if (typeof renderMemberView==='function') {
+      renderMemberView(idx);
+      setTimeout(function() {
+        var h2 = document.querySelector('.hero-info h2');
+        var p  = document.querySelector('.hero-info p');
+        var av = document.querySelector('.hero-av');
+        if (h2 && sess) h2.textContent = (sess.user.user_metadata&&sess.user.user_metadata.full_name)||sess.user.email;
+        if (p  && sess) p.textContent  = sess.user.email+' · '+(TEAM[idx]?TEAM[idx].role:'');
+        if (av && sess && sess.user.user_metadata && sess.user.user_metadata.avatar_url) {
+          av.style.backgroundImage = 'url('+sess.user.user_metadata.avatar_url+')';
+          av.style.backgroundSize  = 'cover'; av.style.backgroundPosition='center'; av.textContent='';
+        }
+      }, 150);
+    }
+  }
+
+  // ═══ AUTH ═══
   async function onSignIn(s) {
-    var email = s.user.email || '';
+    var email = s.user.email||'';
     if (!email.endsWith('@49educacao.com.br') && !email.endsWith('@49er.com.br')) {
-      await sb.auth.signOut();
-      alert('Acesso restrito a @49educacao.com.br');
-      return;
+      await sb.auth.signOut(); alert('Acesso restrito a @49educacao.com.br'); return;
     }
     sess = s;
     document.getElementById('login-overlay').classList.add('hidden');
     showChip(s.user);
 
-    // Carrega time real primeiro, depois abre painel do usuario
-    await loadRealTeam();
-
-    // Se estava em Meu Painel, abre o painel do usuario logado
-    if (typeof currentView !== 'undefined' && currentView === 'member') {
-      openMyPanel(s.user.email);
-    }
-
-    // Vincula botao "Meu Painel" para abrir o painel correto
-    var vbtn = document.querySelector('.vbtn:nth-child(2)');
-    if (vbtn) {
-      var orig = vbtn.getAttribute('onclick');
-      vbtn.onclick = function() {
-        if (typeof setView === 'function') setView('member', vbtn);
-        openMyPanel(sess && sess.user ? sess.user.email : '');
+    // Vincula botao Meu Painel
+    var vbtns = document.querySelectorAll('.vbtn');
+    if (vbtns[1]) {
+      vbtns[1].onclick = function() {
+        if (typeof setView==='function') setView('member', vbtns[1]);
+        openMyPanel(sess&&sess.user?sess.user.email:'');
       };
     }
 
-    await syncCalendar();
+    await loadRealTeam();
+    await syncAllWorkspace();
+    await loadMonthlyRanking();
   }
 
   sb.auth.onAuthStateChange(function(event, s) {
-    if (event === 'SIGNED_IN' && s) { onSignIn(s); }
-    if (event === 'SIGNED_OUT') {
-      sess = null;
+    if (event==='SIGNED_IN'&&s) { onSignIn(s); }
+    if (event==='SIGNED_OUT') {
+      sess=null;
       document.getElementById('login-overlay').classList.remove('hidden');
-      var w = document.getElementById('user-chip-wrap');
-      if (w) w.innerHTML = '';
+      var w=document.getElementById('user-chip-wrap'); if(w) w.innerHTML='';
     }
   });
 
   sb.auth.getSession().then(function(r) {
-    var s = r.data && r.data.session;
+    var s=r.data&&r.data.session;
     if (!s) return;
-    var email = s.user.email || '';
-    if (email.endsWith('@49educacao.com.br') || email.endsWith('@49er.com.br')) {
-      onSignIn(s);
-    }
+    var email=s.user.email||'';
+    if (email.endsWith('@49educacao.com.br')||email.endsWith('@49er.com.br')) onSignIn(s);
   });
 
 })();

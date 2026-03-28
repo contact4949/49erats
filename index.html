@@ -1054,7 +1054,13 @@ function navTo(btn, tab) {
   if(tab==='projetos'){renderProjects('all-proj');document.getElementById('p-at').textContent=PROJECTS.filter(p=>p.s.includes('andamento')).length;}
   if(tab==='northstars') renderNorthStars();
   if(tab==='maturidade') renderMaturity();
-  if(tab==='ranking') renderLeaderboard();
+  if(tab==='ranking') {
+    // Injeta seletor de meses se ainda nao existe
+    if (!document.getElementById('month-tabs') && window._injectMonthSelector) {
+      window._injectMonthSelector();
+    }
+    renderLeaderboard();
+  }
   if(tab==='alertas') renderAlerts();
 }
 
@@ -1175,10 +1181,9 @@ function addProject() {
       }
     });
     // Injeta seletor de meses no ranking
-    injectMonthSelector();
   });
 
-  function injectMonthSelector() {
+  window._injectMonthSelector = function injectMonthSelector() {
     var lb = document.getElementById('leaderboard');
     if (!lb) return;
     var container = lb.parentElement;

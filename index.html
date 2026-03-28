@@ -1240,7 +1240,7 @@ function addProject() {
       {l:'Reuniões Hoje',v:todayCount,s:'↑ vs. ontem',c:'var(--o)',t:'up'},
       {l:'Membros Ativos',v:teamCount,s:'de '+teamCount+' no time',c:'var(--green)'},
       {l:'Projetos Ativos',v:projAtivos||PROJECTS.filter(function(p){return p.s.includes('andamento');}).length,s:'no painel',c:'var(--blue)'},
-      {l:'Semana (reuniões)',v:weekCount,s:'Seg a Sex',c:'var(--yellow)'},
+      {l:'Semana (reuniões)',v:weekCount>0?weekCount:'—',s:weekCount>0?'Seg a Sex':'syncs pendentes',c:'var(--yellow)'},
     ].map(function(k){
       return '<div class="kpi"><div class="kpi-accent" style="background:'+k.c+'"></div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="kpi-sub '+(k.t==='up'?'trend-up':'')+'">'+k.s+'</div></div>';
     }).join('');
@@ -1330,20 +1330,49 @@ function addProject() {
 
   // 5. Agenda — proximos 7 dias
   async function renderAgendaReal() {
-    // Mostra semana atual completa: segunda a domingo + proxima semana
-    var now = new Date();
-    var monday = new Date(now); monday.setDate(now.getDate()-now.getDay()+1); monday.setHours(0,0,0,0);
-    var nextSunday = new Date(monday); nextSunday.setDate(monday.getDate()+13); nextSunday.setHours(23,59,59);
+    // Mostra agenda desde Jan 2026
+    var agendaStart = '2026-01-01T00:00:00Z';
+    var agendaEnd = new Date(); agendaEnd.setDate(agendaEnd.getDate()+30); // +30 dias no futuro
 
     var res = await sb.from('calendar_events')
       .select('title, start_at, end_at, meet_link, attendees, user_id')
-      .gte('start_at', monday.toISOString()).lte('start_at', nextSunday.toISOString())
-      .neq('status','cancelled').order('start_at');
+      .gte('start_at', agendaStart).lte('start_at', agendaEnd.toISOString())
+      .neq('status','cancelled').order('start_at')
+      .limit(500);
+    
+    // Filtro de mes selecionado na agenda
+    var agendaMonth = document.getElementById('agenda-month-filter') ? 
+      document.getElementById('agenda-month-filter').value : null;
+    if (agendaMonth && res.data) {
+      res.data = res.data.filter(function(e){ return e.start_at && e.start_at.slice(0,7) === agendaMonth; });
+    }
 
     var el = document.getElementById('agenda-full');
     if (!el) return;
+
+    // Injeta filtro de mes se nao existe
+    var agendaWrap = el.parentElement;
+    if (!document.getElementById('agenda-month-filter')) {
+      var filterHtml = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">' +
+        '<span style="font-size:11px;font-weight:600;color:var(--g400)">Mês:</span>' +
+        '<button class="mtab active" onclick="window._filterAgenda(null,this)">Tudo 2026</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-01',this)">Jan</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-02',this)">Fev</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-03',this)">Mar</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-04',this)">Abr</button>' +
+        '<input type="hidden" id="agenda-month-filter" value="">' +
+        '</div>';
+      el.insertAdjacentHTML('beforebegin', filterHtml);
+    }
+    window._filterAgenda = function(month, btn) {
+      document.getElementById('agenda-month-filter').value = month || '';
+      document.querySelectorAll('#agenda-full').forEach(function(){});
+      if (btn) { document.querySelectorAll('.mtab').forEach(function(t){ if(t.closest('[style*="margin-bottom:14px"]')) t.classList.remove('active'); }); btn.classList.add('active'); }
+      renderAgendaReal();
+    };
+
     if (!res.data || !res.data.length) {
-      el.innerHTML = '<div class="loading-msg">Faça sync para carregar a agenda real</div>'; return;
+      el.innerHTML = '<div class="loading-msg">Nenhum evento — clique em Sync para carregar a agenda</div>'; return;
     }
 
     // Agrupa por dia
@@ -1463,7 +1492,17 @@ function addProject() {
       var cal=0, drive=0, gmail=0;
       months.forEach(function(mo){ var d=data[mo]||{}; cal+=d.cal||0; drive+=d.drive||0; gmail+=d.gmail||0; });
       var total = (activeSources.cal?cal:0)+(activeSources.drive?drive:0)+(activeSources.gmail?gmail:0);
-      if (total===0 && selectedMonth===new Date().toISOString().slice(0,7)) total = m.pts||0;
+      // Se nao tem dados mensais, usa XP proporcional ao mes
+      if (total===0) {
+        var mesIdx = MONTHS.findIndex(function(x){return x.key===selectedMonth;});
+        var totalPts = m.pts || 0;
+        if (selectedMonth === 'all') {
+          total = totalPts; // Todo 2026 = XP total real
+        } else {
+          // Distribui XP pelos meses proporcionalmente (estimativa)
+          total = Math.round(totalPts / Math.max(1, new Date().getMonth()+1));
+        }
+      }
       return { name:m.name, role:m.role, bg:m.bg, fg:m.fg, i:m.i, pts:total, cal:cal, drive:drive, gmail:gmail };
     }).sort(function(a,b){return b.pts-a.pts;});
 
@@ -1473,16 +1512,22 @@ function addProject() {
       if(activeSources.cal&&m.cal>0) detail.push('📅 '+m.cal+'pts');
       if(activeSources.drive&&m.drive>0) detail.push('📁 '+m.drive+'pts');
       if(activeSources.gmail&&m.gmail>0) detail.push('✉️ '+m.gmail+'pts');
-      return '<div class="lb-row">'+
-        '<span class="lb-rank '+(i===0?'r1':i===1?'r2':i===2?'r3':'r-n')+'">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1)+'</span>'+
+      var noSync = m.pts === 0;
+      var ptsLabel = noSync 
+        ? '<span style="font-size:10px;color:var(--g400);background:var(--g100);border-radius:4px;padding:2px 7px;">⏳ sync pendente</span>'
+        : m.pts.toLocaleString('pt-BR')+' pts';
+      return '<div class="lb-row" style="opacity:'+(noSync?'0.5':'1')+'">'+
+        '<span class="lb-rank '+(i===0&&!noSync?'r1':i===1&&!noSync?'r2':i===2&&!noSync?'r3':'r-n')+'">'+(noSync?'—':i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1)+'</span>'+
         '<div class="lb-av" style="background:'+m.bg+';color:'+m.fg+';width:34px;height:34px;font-size:12px;font-weight:700">'+m.i+'</div>'+
         '<div class="lb-info"><div class="lb-name">'+m.name+'</div><div class="lb-role">'+m.role+'</div>'+
-        (detail.length?'<div class="lb-detail">'+detail.join(' · ')+'</div>':'')+'</div>'+
-        '<div class="lb-bgs">'+(badges[i]||['']).map(function(b){return '<span>'+b+'</span>';}).join('')+'</div>'+
+        (detail.length?'<div class="lb-detail">'+detail.join(' · ')+'</div>':(!noSync?'':'<div class="lb-detail">Precisa fazer login e sync</div>'))+'</div>'+
+        '<div class="lb-bgs">'+(noSync?'':((badges[i]||['']).map(function(b){return '<span>'+b+'</span>';}).join('')))+'</div>'+
         '<div class="lb-bar-w">'+
-        '<div class="lb-bar"><div class="lb-fill" style="width:'+Math.round(m.pts/maxPts*100)+'%;background:'+m.bg+'"></div></div>'+
-        '<div class="lb-pts">'+m.pts.toLocaleString('pt-BR')+' pts</div></div></div>';
-    }).join('');
+        '<div class="lb-bar"><div class="lb-fill" style="width:'+(noSync?0:Math.round(m.pts/maxPts*100))+'%;background:'+m.bg+'"></div></div>'+
+        '<div class="lb-pts">'+ptsLabel+'</div></div></div>';
+    }).join('')+
+    '<div style="margin-top:12px;padding:10px 14px;background:var(--o2);border-radius:8px;border:1px solid var(--o3);font-size:11px;color:var(--o);font-weight:600">'+
+    '⚡ '+scores.filter(function(s){return s.pts===0;}).length+' membros ainda não sincronizaram. Compartilha o link e pede pra entrarem!</div>';
   }
   window.renderLeaderboard = renderMonthlyLeaderboard;
 
@@ -1605,7 +1650,8 @@ function addProject() {
       var sector=m.sector||'Time';
       var hist=m.meetings_history||{};
       TEAM.push({name:name,role:sector,email:m.email||'',pts:m.xp_total||0,xp:m.xp_total||0,mtgs:m.meetings_month||0,level:m.level||1,i:init,bg:SECTOR_COLORS[sector]||'#FF4F11',fg:'#fff',status:'green',avatar:m.avatar_url||null,goals:[],northstars:[]});
-      if(!monthlyData[name]&&Object.keys(hist).length) monthlyData[name]=hist;
+      // Sempre usa o historico do banco se disponivel
+      if(Object.keys(hist).length) monthlyData[name]=hist;
     });
     if(typeof renderSidebarTeam==='function') renderSidebarTeam();
     renderMonthlyLeaderboard();

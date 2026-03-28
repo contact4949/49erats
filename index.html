@@ -1317,7 +1317,8 @@ function addProject() {
     if (chartInited.team && chartInited.teamChart) { chartInited.teamChart.destroy(); }
     chartInited.teamChart = new Chart(ctx,{type:'bar',data:{
       labels: data.map(function(m){return (m.name||'').split(' ')[0];}),
-      datasets:[{data:data.map(function(m){return m.meetings_month||0;}),
+      datasets:[{data:data.map(function(m){return Math.min(m.meetings_month||0, 200);}),
+        meetingsReal:data.map(function(m){return m.meetings_month||0;}),
         backgroundColor: data.map(function(m,i){var c=Object.values(SECTOR_COLORS);return c[i%c.length]+'99';}),
         borderColor: data.map(function(m,i){var c=Object.values(SECTOR_COLORS);return c[i%c.length];}),
         borderWidth:1,borderRadius:5,borderSkipped:false}]
@@ -1329,12 +1330,14 @@ function addProject() {
 
   // 5. Agenda — proximos 7 dias
   async function renderAgendaReal() {
-    var start = new Date(); start.setHours(0,0,0,0);
-    var end = new Date(start); end.setDate(end.getDate()+7); end.setHours(23,59,59);
+    // Mostra semana atual completa: segunda a domingo + proxima semana
+    var now = new Date();
+    var monday = new Date(now); monday.setDate(now.getDate()-now.getDay()+1); monday.setHours(0,0,0,0);
+    var nextSunday = new Date(monday); nextSunday.setDate(monday.getDate()+13); nextSunday.setHours(23,59,59);
 
     var res = await sb.from('calendar_events')
       .select('title, start_at, end_at, meet_link, attendees, user_id')
-      .gte('start_at', start.toISOString()).lte('start_at', end.toISOString())
+      .gte('start_at', monday.toISOString()).lte('start_at', nextSunday.toISOString())
       .neq('status','cancelled').order('start_at');
 
     var el = document.getElementById('agenda-full');

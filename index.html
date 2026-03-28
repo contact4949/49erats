@@ -435,13 +435,13 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   <!-- RANKING -->
   <div id="tab-ranking" style="display:none">
     <div class="game-banner">
-      <div><div class="game-t">🏆 Ranking Mensal da 49 Educação</div><div class="game-s">Pontos: Reuniões · Entregas · Consistência de Processos · Engajamento</div></div>
-      <div class="game-right"><div class="game-month">ABRIL 2026</div><div class="game-days">⏳ Faltam 30 dias</div></div>
+      <div><div class="game-t">🏆 Ranking Mensal da 49 Educação</div><div class="game-s">Pontos: Reuniões · Entregas · Drive · Gmail</div></div>
+      <div class="game-right"><div class="game-month" id="ranking-mes">ABRIL 2026</div><div class="game-days" id="ranking-dias">⏳ Faltam 30 dias</div></div>
     </div>
-    <div class="g3" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-accent" style="background:var(--o)"></div><div class="kpi-lbl">Reuniões Março</div><div class="kpi-val">21</div><div class="kpi-sub trend-up">↑ vs fevereiro</div></div>
-      <div class="kpi"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-lbl">Entregas no Prazo</div><div class="kpi-val">3/4</div><div class="kpi-sub">75% precisão</div></div>
-      <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-lbl">XP Total do Time</div><div class="kpi-val">5.447</div><div class="kpi-sub trend-up">↑ 12% vs fev</div></div>
+    <div class="g3" style="margin-bottom:16px" id="ranking-kpis">
+      <div class="kpi"><div class="kpi-accent" style="background:var(--o)"></div><div class="kpi-lbl" id="rk-lbl-1">Reuniões do Mês</div><div class="kpi-val" id="rk-val-1">—</div><div class="kpi-sub" id="rk-sub-1">carregando...</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-lbl">Membros Sincronizados</div><div class="kpi-val" id="rk-val-2">—</div><div class="kpi-sub" id="rk-sub-2">do time</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-lbl">XP Total do Time</div><div class="kpi-val" id="rk-val-3">—</div><div class="kpi-sub" id="rk-sub-3">acumulado 2026</div></div>
     </div>
     <div class="lb" id="leaderboard"></div>
   </div>
@@ -1356,10 +1356,10 @@ function addProject() {
       var filterHtml = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">' +
         '<span style="font-size:11px;font-weight:600;color:var(--g400)">Mês:</span>' +
         '<button class="mtab active" onclick="window._filterAgenda(null,this)">Tudo 2026</button>' +
-        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-01&quot;,this)">Jan</button>' +
-        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-02&quot;,this)">Fev</button>' +
-        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-03&quot;,this)">Mar</button>' +
-        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-04&quot;,this)">Abr</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-01',this)">Jan</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-02',this)">Fev</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-03',this)">Mar</button>' +
+        '<button class="mtab" onclick="window._filterAgenda('2026-04',this)">Abr</button>' +
         '<input type="hidden" id="agenda-month-filter" value="">' +
         '</div>';
       el.insertAdjacentHTML('beforebegin', filterHtml);
@@ -1444,6 +1444,7 @@ function addProject() {
     if (tab === 'ranking') {
       if (!document.getElementById('month-tabs') && window._injectMonthSelector) window._injectMonthSelector();
       renderMonthlyLeaderboard();
+      loadRankingKPIs(selectedMonth);
     }
   };
 
@@ -1464,6 +1465,72 @@ function addProject() {
     );
   };
 
+
+  // ═══ RANKING KPIs REAIS ═══
+  async function loadRankingKPIs(month) {
+    var mes = month || selectedMonth;
+    var mesNames = {'2026-01':'Janeiro','2026-02':'Fevereiro','2026-03':'Março','2026-04':'Abril','all':'2026'};
+    var mesLabel = mesNames[mes] || mes;
+
+    // Atualiza banner
+    var bannerMes = document.getElementById('ranking-mes');
+    var bannerDias = document.getElementById('ranking-dias');
+    if (bannerMes) bannerMes.textContent = (mes==='all'?'TODO 2026':mesLabel.toUpperCase()+' 2026');
+
+    // Dias restantes no mes atual
+    if (bannerDias && mes !== 'all') {
+      var now = new Date();
+      var lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0);
+      var diasRestantes = Math.max(0, Math.ceil((lastDay-now)/86400000));
+      bannerDias.textContent = '⏳ Faltam '+diasRestantes+' dias';
+    }
+
+    // 1. Total de reunioes no mes (do banco)
+    var v1 = document.getElementById('rk-val-1'), l1 = document.getElementById('rk-lbl-1'), s1 = document.getElementById('rk-sub-1');
+    if (v1) {
+      var startMes = mes==='all' ? '2026-01-01T00:00:00Z' : mes+'-01T00:00:00Z';
+      var endMes   = mes==='all' ? new Date().toISOString() : new Date(mes.slice(0,4), parseInt(mes.slice(5,7)), 0, 23, 59).toISOString();
+      var rMeets = await sb.from('calendar_events').select('id', {count:'exact',head:true})
+        .gte('start_at', startMes).lte('start_at', endMes).neq('status','cancelled');
+      var totalMeets = rMeets.count || 0;
+      v1.textContent = totalMeets > 200 ? totalMeets.toLocaleString('pt-BR') : totalMeets;
+      if (l1) l1.textContent = 'Reuniões em '+(mes==='all'?'2026':mesLabel);
+      if (s1) {
+        // Compara com mes anterior
+        var prevMonth = mes === 'all' ? null : (parseInt(mes.slice(5,7)) > 1 ? mes.slice(0,5)+(parseInt(mes.slice(5,7))-1).toString().padStart(2,'0') : null);
+        if (prevMonth) {
+          var rPrev = await sb.from('calendar_events').select('id', {count:'exact',head:true})
+            .gte('start_at', prevMonth+'-01T00:00:00Z').lt('start_at', mes+'-01T00:00:00Z').neq('status','cancelled');
+          var prevCount = rPrev.count || 0;
+          var diff = totalMeets - prevCount;
+          s1.textContent = (diff >= 0 ? '↑ ' : '↓ ') + Math.abs(diff) + ' vs mês anterior';
+          s1.className = 'kpi-sub ' + (diff >= 0 ? 'trend-up' : 'trend-dn');
+        } else {
+          s1.textContent = 'total no período';
+        }
+      }
+    }
+
+    // 2. Membros sincronizados
+    var v2 = document.getElementById('rk-val-2'), s2 = document.getElementById('rk-sub-2');
+    if (v2) {
+      var rSync = await sb.from('member_stats').select('user_id,xp_total');
+      var total = rSync.data ? rSync.data.length : 0;
+      var synced = rSync.data ? rSync.data.filter(function(m){return m.xp_total > 0;}).length : 0;
+      v2.textContent = synced+'/'+total;
+      if (s2) s2.textContent = (total-synced) > 0 ? (total-synced)+' aguardando sync' : '✅ todos sincronizados';
+    }
+
+    // 3. XP total do time
+    var v3 = document.getElementById('rk-val-3'), s3 = document.getElementById('rk-sub-3');
+    if (v3) {
+      var rXP = await sb.from('member_stats').select('xp_total');
+      var totalXP = (rXP.data||[]).reduce(function(s,m){return s+(m.xp_total||0);},0);
+      v3.textContent = totalXP.toLocaleString('pt-BR');
+      if (s3) s3.textContent = 'acumulado 2026 · '+TEAM.length+' membros';
+    }
+  }
+
   window._selectMonth = function(month) {
     selectedMonth = month;
     document.querySelectorAll('.mtab').forEach(function(t){t.classList.remove('active');});
@@ -1472,6 +1539,7 @@ function addProject() {
       MONTHS.forEach(function(m){ if(m.key===month && t.textContent.trim()===m.label) t.classList.add('active'); });
     });
     renderMonthlyLeaderboard();
+    loadRankingKPIs(selectedMonth);
   };
 
   window._toggleSrc = function(src) {

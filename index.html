@@ -1356,10 +1356,10 @@ function addProject() {
       var filterHtml = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">' +
         '<span style="font-size:11px;font-weight:600;color:var(--g400)">Mês:</span>' +
         '<button class="mtab active" onclick="window._filterAgenda(null,this)">Tudo 2026</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-01',this)">Jan</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-02',this)">Fev</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-03',this)">Mar</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-04',this)">Abr</button>' +
+        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-01&quot;,this)">Jan</button>' +
+        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-02&quot;,this)">Fev</button>' +
+        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-03&quot;,this)">Mar</button>' +
+        '<button class="mtab" onclick="window._filterAgenda(&quot;2026-04&quot;,this)">Abr</button>' +
         '<input type="hidden" id="agenda-month-filter" value="">' +
         '</div>';
       el.insertAdjacentHTML('beforebegin', filterHtml);

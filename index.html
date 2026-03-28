@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>49 EducaÃ§Ã£o â€” Hub Operacional</title>
+<title>49 Educação — Hub Operacional</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ═══ SUPABASE — carrega antes de tudo ═══
+const _SB_URL = 'https://gaubpaxaywmfzudajqyn.supabase.co';
+const _SB_KEY = 'sb_publishable_f0H846JTMq1aBx0jn-p7Bw_FwUjm6Ho';
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -27,7 +33,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:100vh;}
 
-/* â”€â”€ TOP BAR â”€â”€ */
+/* ── TOP BAR ── */
 .topbar{background:var(--w);border-bottom:1px solid var(--g200);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:100;}
 .logo{display:flex;align-items:center;gap:9px;}
 .logo-box{width:30px;height:30px;background:var(--o);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-1px;}
@@ -48,14 +54,14 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .btn-primary:hover{opacity:.88;}
 .month-chip{font-size:11px;font-weight:700;color:var(--g400);font-family:var(--mono);background:var(--g100);padding:4px 10px;border-radius:6px;}
 
-/* â”€â”€ LAYOUT â”€â”€ */
+/* ── LAYOUT ── */
 .app{display:flex;height:calc(100vh - 54px);overflow:hidden;}
 .sidebar{width:214px;min-width:214px;background:var(--w);border-right:1px solid var(--g200);overflow-y:auto;padding:14px 10px;flex-shrink:0;}
 .main{flex:1;overflow-y:auto;padding:22px 26px;}
 .view{display:none;}
 .view.active{display:block;}
 
-/* â”€â”€ SIDEBAR â”€â”€ */
+/* ── SIDEBAR ── */
 .nl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);padding:0 8px;margin:16px 0 4px;}
 .nl:first-child{margin-top:0;}
 .ni{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:var(--r8);cursor:pointer;font-size:12px;font-weight:500;color:var(--g600);border:none;background:none;width:100%;text-align:left;transition:all .12s;}
@@ -70,19 +76,19 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .mem-name{font-size:11px;color:var(--bk);font-weight:500;flex:1;}
 .status-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 
-/* â”€â”€ CARDS â”€â”€ */
+/* ── CARDS ── */
 .card{background:var(--w);border:1px solid var(--g200);border-radius:var(--r16);padding:18px;}
 .ct{font-size:13px;font-weight:700;color:var(--bk);display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .cl{font-size:11px;font-weight:600;color:var(--o);cursor:pointer;}
 
-/* â”€â”€ GRIDS â”€â”€ */
+/* ── GRIDS ── */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
 .g31{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:14px;}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
 .mb14{margin-bottom:14px;}
 
-/* â”€â”€ KPI CARDS â”€â”€ */
+/* ── KPI CARDS ── */
 .kpi{background:var(--w);border:1px solid var(--g200);border-radius:var(--r16);padding:16px 18px;position:relative;overflow:hidden;}
 .kpi-accent{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:var(--r16) 0 0 var(--r16);}
 .kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--g400);margin-bottom:7px;}
@@ -91,7 +97,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .trend-up{color:var(--green);}
 .trend-dn{color:var(--o);}
 
-/* â”€â”€ MEETING ROWS â”€â”€ */
+/* ── MEETING ROWS ── */
 .mtg{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--g100);}
 .mtg:last-child{border:none;}
 .mtg-t{font-size:11px;font-family:var(--mono);color:var(--g400);min-width:36px;}
@@ -100,7 +106,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .mtg-p{font-size:11px;color:var(--g400);font-family:var(--mono);}
 .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;}
 
-/* â”€â”€ PROJ ROWS â”€â”€ */
+/* ── PROJ ROWS ── */
 .pr{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--g100);}
 .pr:last-child{border:none;}
 .pr-ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
@@ -118,7 +124,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .b-b{background:var(--bs);color:var(--blue);}
 .b-gr{background:var(--g100);color:var(--g600);}
 
-/* â”€â”€ NORTH STAR CARDS (Setor) â”€â”€ */
+/* ── NORTH STAR CARDS (Setor) ── */
 .ns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
 .ns-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--r16);padding:16px;border-top:3px solid;}
 .ns-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
@@ -135,7 +141,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .challenge-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-bottom:4px;}
 .challenge-txt{font-size:11px;color:var(--g600);line-height:1.4;}
 
-/* â”€â”€ MATURIDADE â”€â”€ */
+/* ── MATURIDADE ── */
 .mat-table{width:100%;border-collapse:collapse;font-size:12px;}
 .mat-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);padding:6px 8px;text-align:left;border-bottom:1px solid var(--g200);}
 .mat-table td{padding:8px;border-bottom:1px solid var(--g100);vertical-align:middle;}
@@ -148,7 +154,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .ch-baixa{background:#FEE2E2;color:#991B1B;}
 .ch-inex{background:var(--g100);color:var(--g600);}
 
-/* â”€â”€ GAMIFICAÃ‡ÃƒO â”€â”€ */
+/* ── GAMIFICAÇÃO ── */
 .game-banner{background:var(--navy);border-radius:var(--r24);padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;color:#fff;}
 .game-t{font-size:18px;font-weight:800;margin-bottom:3px;}
 .game-s{font-size:11px;color:rgba(255,255,255,.45);}
@@ -170,7 +176,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .lb-fill{height:100%;border-radius:4px;}
 .lb-pts{font-size:11px;font-weight:700;color:var(--g600);font-family:var(--mono);}
 
-/* â”€â”€ INDIVIDUAL VIEW â”€â”€ */
+/* ── INDIVIDUAL VIEW ── */
 .user-hero{background:var(--w);border:1px solid var(--g200);border-radius:var(--r16);padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;gap:16px;}
 .hero-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0;}
 .hero-info h2{font-size:18px;font-weight:800;color:var(--bk);}
@@ -216,7 +222,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .ach-n{font-size:10px;font-weight:600;color:var(--bk);}
 .ach-d{font-size:9px;color:var(--g400);margin-top:1px;}
 
-/* â”€â”€ NORTE STAR INDIVIDUAL â”€â”€ */
+/* ── NORTE STAR INDIVIDUAL ── */
 .ns-ind{background:var(--navy);border-radius:var(--r16);padding:16px 18px;color:#fff;margin-bottom:14px;}
 .ns-ind-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.4);margin-bottom:10px;}
 .ns-metric-ind{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08);}
@@ -229,7 +235,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .s-warn{background:rgba(255,79,17,.15);color:#FF7A44;}
 .s-na{background:rgba(255,255,255,.1);color:rgba(255,255,255,.4);}
 
-/* â”€â”€ PROCESS MATURITY INDIVIDUAL â”€â”€ */
+/* ── PROCESS MATURITY INDIVIDUAL ── */
 .proc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
 .proc-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--r12);padding:12px;}
 .proc-name{font-size:11px;font-weight:600;color:var(--bk);margin-bottom:6px;}
@@ -237,7 +243,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .proc-fill{height:100%;border-radius:4px;}
 .proc-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--g400);font-family:var(--mono);}
 
-/* â”€â”€ ALERTS â”€â”€ */
+/* ── ALERTS ── */
 .alert{display:flex;gap:9px;padding:11px 13px;border-radius:var(--r12);border:1px solid;margin-bottom:8px;}
 .alert-ico{font-size:14px;}
 .alert-t{font-size:12px;font-weight:600;margin-bottom:1px;}
@@ -247,15 +253,15 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .a-info{background:var(--bs);border-color:#80AADD;color:var(--blue);}
 .a-red{background:var(--rs);border-color:#F0A0A0;color:var(--red);}
 
-/* â”€â”€ CHART WRAP â”€â”€ */
+/* ── CHART WRAP ── */
 .cw{position:relative;}
 
-/* â”€â”€ SCROLL â”€â”€ */
+/* ── SCROLL ── */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px;}
 
-/* â”€â”€ MODAL â”€â”€ */
+/* ── MODAL ── */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
 .ov.hidden{display:none;}
 .modal{background:var(--w);border-radius:var(--r24);padding:26px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(0,0,0,.14);}
@@ -267,7 +273,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .field input:focus,.field select:focus{border-color:var(--o);}
 .mf{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
 
-/* â”€â”€ SECTION DIVIDER â”€â”€ */
+/* ── SECTION DIVIDER ── */
 .sdiv{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--g400);padding:10px 0 6px;border-bottom:1px solid var(--g200);margin-bottom:12px;}
 
 @media(max-width:1100px){
@@ -277,7 +283,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   .hero-stats{display:none;}
 }
 
-/* â”€â”€ LOGIN OVERLAY â”€â”€ */
+/* ── LOGIN OVERLAY ── */
 #login-overlay{position:fixed;inset:0;background:var(--g50);z-index:9999;display:flex;align-items:center;justify-content:center;}
 #login-overlay.hidden{display:none;}
 .login-box{background:var(--w);border:1px solid var(--g200);border-radius:var(--r24);padding:40px 44px;width:100%;max-width:400px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08);}
@@ -288,18 +294,11 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .btn-google:hover{border-color:var(--o);background:var(--o2);}
 .btn-google svg{width:18px;height:18px;flex-shrink:0;}
 .login-note{font-size:10px;color:var(--g400);margin-top:16px;}
-.login-loading{font-size:12px;color:var(--g400);margin-top:14px;display:none;}
-
-/* â”€â”€ USER CHIP NO TOPBAR â”€â”€ */
 .user-chip{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:20px;border:1px solid var(--g200);background:var(--w);cursor:pointer;font-size:11px;font-weight:600;color:var(--bk);}
 .user-chip:hover{border-color:var(--o);}
 .user-av{width:24px;height:24px;border-radius:50%;object-fit:cover;}
-.user-av-fallback{width:24px;height:24px;border-radius:50%;background:var(--o);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
-
-/* â”€â”€ SYNC STATUS â”€â”€ */
-.sync-status{font-size:10px;font-weight:600;color:var(--green);background:var(--gs);padding:3px 9px;border-radius:20px;display:none;}
+.user-av-fb{width:24px;height:24px;border-radius:50%;background:var(--o);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -307,18 +306,12 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 <div id="login-overlay">
   <div class="login-box">
     <div class="login-logo">49</div>
-    <div class="login-title">49 EducaÃ§Ã£o Hub</div>
+    <div class="login-title">49 Educação Hub</div>
     <div class="login-sub">Entre com sua conta Google corporativa<br>para acessar o Hub Operacional</div>
-    <button class="btn-google" onclick="window._loginWithGoogle && window._loginWithGoogle()">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Entrar com Google
     </button>
-    <div class="login-loading" id="login-loading">âŸ³ Conectando...</div>
     <div class="login-note">Acesso restrito a @49educacao.com.br</div>
   </div>
 </div>
@@ -328,20 +321,19 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   <div style="display:flex;align-items:center;gap:16px;">
     <div class="logo">
       <div class="logo-box">49</div>
-      <span class="logo-name">49 EducaÃ§Ã£o</span>
+      <span class="logo-name">49 Educação</span>
       <div class="logo-sep"></div>
       <span class="logo-sub">Hub Operacional</span>
     </div>
     <div class="vtoggle">
-      <button class="vbtn active" onclick="setView('team',this)">ðŸ  Time</button>
-      <button class="vbtn" onclick="setView('member',this)">ðŸ‘¤ Meu Painel</button>
+      <button class="vbtn active" onclick="setView('team',this)">🏠 Time</button>
+      <button class="vbtn" onclick="setView('member',this)">👤 Meu Painel</button>
     </div>
   </div>
   <div class="tr">
-    <span class="month-chip" id="month-chip">ABR 2026</span>
-    <span class="sync-status" id="sync-status">âœ“ Sincronizado</span>
+    <span class="month-chip">ABR 2026</span>
     <div class="live"><div class="live-dot"></div>Ao vivo</div>
-    <button class="btn btn-ghost" onclick="doSync(this)" id="sync-btn">âŸ³ Sync</button>
+    <button class="btn btn-ghost" onclick="doSync(this)">⟳ Sync</button>
     <button class="btn btn-primary" onclick="document.getElementById('modal').classList.remove('hidden')">+ Projeto</button>
     <div id="user-chip-wrap"></div>
   </div>
@@ -350,16 +342,16 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 <div class="app">
 <!-- SIDEBAR -->
 <nav class="sidebar" id="sidebar">
-  <div class="nl">VisÃ£o Geral</div>
-  <button class="ni active" onclick="navTo(this,'dash')"><span class="ni-ico">â—ˆ</span>Dashboard</button>
-  <button class="ni" onclick="navTo(this,'agenda')"><span class="ni-ico">â—·</span>Agenda<span class="ni-ct">8</span></button>
-  <button class="ni" onclick="navTo(this,'projetos')"><span class="ni-ico">â—§</span>Projetos</button>
+  <div class="nl">Visão Geral</div>
+  <button class="ni active" onclick="navTo(this,'dash')"><span class="ni-ico">◈</span>Dashboard</button>
+  <button class="ni" onclick="navTo(this,'agenda')"><span class="ni-ico">◷</span>Agenda<span class="ni-ct">8</span></button>
+  <button class="ni" onclick="navTo(this,'projetos')"><span class="ni-ico">◧</span>Projetos</button>
 
   <div class="nl">Performance</div>
-  <button class="ni" onclick="navTo(this,'northstars')"><span class="ni-ico">â­</span>North Stars</button>
-  <button class="ni" onclick="navTo(this,'maturidade')"><span class="ni-ico">ðŸ“Š</span>Maturidade</button>
-  <button class="ni" onclick="navTo(this,'ranking')"><span class="ni-ico">ðŸ†</span>Ranking</button>
-  <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">â—¬</span>Alertas<span class="ni-ct">4</span></button>
+  <button class="ni" onclick="navTo(this,'northstars')"><span class="ni-ico">⭐</span>North Stars</button>
+  <button class="ni" onclick="navTo(this,'maturidade')"><span class="ni-ico">📊</span>Maturidade</button>
+  <button class="ni" onclick="navTo(this,'ranking')"><span class="ni-ico">🏆</span>Ranking</button>
+  <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">◬</span>Alertas<span class="ni-ct">4</span></button>
 
   <div class="nl" style="margin-top:16px">Time</div>
   <div id="sidebar-team"></div>
@@ -368,7 +360,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 <!-- MAIN -->
 <main class="main">
 
-<!-- â•â• TEAM VIEW â•â• -->
+<!-- ══ TEAM VIEW ══ -->
 <div id="view-team" class="view active">
 
   <!-- DASH -->
@@ -376,7 +368,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
     <div class="g4" id="kpi-strip"></div>
     <div class="g31">
       <div class="card">
-        <div class="ct">ReuniÃµes de Hoje <span class="cl" onclick="navTo(document.querySelector('[onclick*=agenda]'),'agenda')">ver todas â†’</span></div>
+        <div class="ct">Reuniões de Hoje <span class="cl" onclick="navTo(document.querySelector('[onclick*=agenda]'),'agenda')">ver todas →</span></div>
         <div id="mtg-today"></div>
       </div>
       <div class="card">
@@ -386,11 +378,11 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
     </div>
     <div class="g2">
       <div class="card">
-        <div class="ct">Projetos Ativos <span class="cl" onclick="navTo(document.querySelector('[onclick*=projetos]'),'projetos')">todos â†’</span></div>
+        <div class="ct">Projetos Ativos <span class="cl" onclick="navTo(document.querySelector('[onclick*=projetos]'),'projetos')">todos →</span></div>
         <div id="proj-dash"></div>
       </div>
       <div class="card">
-        <div class="ct">ReuniÃµes por Membro</div>
+        <div class="ct">Reuniões por Membro</div>
         <div class="cw" style="height:190px"><canvas id="chart-team"></canvas></div>
       </div>
     </div>
@@ -398,7 +390,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 
   <!-- AGENDA -->
   <div id="tab-agenda" style="display:none">
-    <div class="card"><div class="ct">Agenda da Semana â€” 27 Mar a 01 Abr</div><div id="agenda-full"></div></div>
+    <div class="card"><div class="ct">Agenda da Semana — 27 Mar a 01 Abr</div><div id="agenda-full"></div></div>
   </div>
 
   <!-- PROJETOS -->
@@ -413,7 +405,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 
   <!-- NORTH STARS -->
   <div id="tab-northstars" style="display:none">
-    <div class="sdiv">North Stars por Setor â€” Status Report Jan 2026</div>
+    <div class="sdiv">North Stars por Setor — Status Report Jan 2026</div>
     <div class="ns-grid" id="ns-grid"></div>
   </div>
 
@@ -421,14 +413,14 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   <div id="tab-maturidade" style="display:none">
     <div class="g2 mb14">
       <div class="card">
-        <div class="ct">ConsistÃªncia dos Processos</div>
+        <div class="ct">Consistência dos Processos</div>
         <div class="cw" style="height:200px"><canvas id="chart-mat"></canvas></div>
       </div>
       <div class="card">
         <div class="ct">Total: 233 processos mapeados</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div style="background:#DCFCE7;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:#166534">114</div><div style="font-size:10px;color:#166534;font-weight:600">Alta (49%)</div></div>
-          <div style="background:#FEF9C3;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:#854D0E">73</div><div style="font-size:10px;color:#854D0E;font-weight:600">MÃ©dia (31%)</div></div>
+          <div style="background:#FEF9C3;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:#854D0E">73</div><div style="font-size:10px;color:#854D0E;font-weight:600">Média (31%)</div></div>
           <div style="background:#FEE2E2;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:#991B1B">37</div><div style="font-size:10px;color:#991B1B;font-weight:600">Baixa (16%)</div></div>
           <div style="background:var(--g100);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--g600)">9</div><div style="font-size:10px;color:var(--g600);font-weight:600">Inexistente (4%)</div></div>
         </div>
@@ -443,13 +435,13 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   <!-- RANKING -->
   <div id="tab-ranking" style="display:none">
     <div class="game-banner">
-      <div><div class="game-t">ðŸ† Ranking Mensal da 49 EducaÃ§Ã£o</div><div class="game-s">Pontos: ReuniÃµes Â· Entregas Â· ConsistÃªncia de Processos Â· Engajamento</div></div>
-      <div class="game-right"><div class="game-month">ABRIL 2026</div><div class="game-days">â³ Faltam 30 dias</div></div>
+      <div><div class="game-t">🏆 Ranking Mensal da 49 Educação</div><div class="game-s">Pontos: Reuniões · Entregas · Consistência de Processos · Engajamento</div></div>
+      <div class="game-right"><div class="game-month">ABRIL 2026</div><div class="game-days">⏳ Faltam 30 dias</div></div>
     </div>
     <div class="g3" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-accent" style="background:var(--o)"></div><div class="kpi-lbl">ReuniÃµes MarÃ§o</div><div class="kpi-val">21</div><div class="kpi-sub trend-up">â†‘ vs fevereiro</div></div>
-      <div class="kpi"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-lbl">Entregas no Prazo</div><div class="kpi-val">3/4</div><div class="kpi-sub">75% precisÃ£o</div></div>
-      <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-lbl">XP Total do Time</div><div class="kpi-val">5.447</div><div class="kpi-sub trend-up">â†‘ 12% vs fev</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--o)"></div><div class="kpi-lbl">Reuniões Março</div><div class="kpi-val">21</div><div class="kpi-sub trend-up">↑ vs fevereiro</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-lbl">Entregas no Prazo</div><div class="kpi-val">3/4</div><div class="kpi-sub">75% precisão</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-lbl">XP Total do Time</div><div class="kpi-val">5.447</div><div class="kpi-sub trend-up">↑ 12% vs fev</div></div>
     </div>
     <div class="lb" id="leaderboard"></div>
   </div>
@@ -459,17 +451,17 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 
 </div><!-- /view-team -->
 
-<!-- â•â• MEMBER VIEW â•â• -->
+<!-- ══ MEMBER VIEW ══ -->
 <div id="view-member" class="view">
 
   <div class="user-hero">
     <div class="hero-av" id="hero-av" style="background:#FFF0EB;color:#FF4F11;width:52px;height:52px;font-size:18px;font-weight:800;">TT</div>
     <div class="hero-info">
       <h2 id="hero-name">Tiago Toigo</h2>
-      <p id="hero-sub"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="daaeb3bbbdb5f4aeb5b3bdb59aeee3bfbeafb9bbb9bbb5f4b9b5b7f4b8a8">[email&#160;protected]</a> Â· Ger. Produto/CS</p>
+      <p id="hero-sub"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0c78656d6b63227863656b634c38356968796f6d6f6d63226f6361226e7e">[email&#160;protected]</a> · Ger. Produto/CS</p>
     </div>
     <div class="hero-stats">
-      <div class="hstat"><div class="hstat-v" id="h-mtgs">22</div><div class="hstat-l">ReuniÃµes</div></div>
+      <div class="hstat"><div class="hstat-v" id="h-mtgs">22</div><div class="hstat-l">Reuniões</div></div>
       <div class="hstat"><div class="hstat-v" id="h-xp">847</div><div class="hstat-l">XP</div></div>
       <div class="hstat"><div class="hstat-v" id="h-rank">#1</div><div class="hstat-l">Ranking</div></div>
     </div>
@@ -478,42 +470,42 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   <!-- XP BAR -->
   <div class="xp-card">
     <div class="xp-hd">
-      <div class="xp-lv"><span class="xp-badge" id="xp-badge">NÃ­vel 4 Â· LÃ­der</span> ðŸ”¥</div>
-      <span class="xp-next" id="xp-next">847 / 1000 XP para NÃ­vel 5</span>
+      <div class="xp-lv"><span class="xp-badge" id="xp-badge">Nível 4 · Líder</span> 🔥</div>
+      <span class="xp-next" id="xp-next">847 / 1000 XP para Nível 5</span>
     </div>
     <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:84.7%"></div></div>
   </div>
 
   <!-- NORTH STAR INDIVIDUAL -->
   <div class="ns-ind" id="ns-ind">
-    <div class="ns-ind-t">â­ Meu North Star â€” Produto/CS</div>
+    <div class="ns-ind-t">⭐ Meu North Star — Produto/CS</div>
     <div id="ns-ind-metrics"></div>
   </div>
 
   <!-- SYNC -->
   <div class="sync-box" id="sync-box">
-    <div class="sync-t">ðŸ“¡ Sincronize sua Agenda, E-mail e Drive</div>
-    <div class="sync-s">Conecte o Google Workspace para monitoramento automÃ¡tico e enriquecimento dos KPIs</div>
+    <div class="sync-t">📡 Sincronize sua Agenda, E-mail e Drive</div>
+    <div class="sync-s">Conecte o Google Workspace para monitoramento automático e enriquecimento dos KPIs</div>
     <div class="sync-btns">
-      <button class="sync-btn sync-cal" onclick="connectSource('cal')">ðŸ“… Calendar</button>
-      <button class="sync-btn sync-mail" onclick="connectSource('mail')">âœ‰ï¸ Gmail</button>
-      <button class="sync-btn sync-drive" onclick="connectSource('drive')">ðŸ“ Drive</button>
+      <button class="sync-btn sync-cal" onclick="connectSource('cal')">📅 Calendar</button>
+      <button class="sync-btn sync-mail" onclick="connectSource('mail')">✉️ Gmail</button>
+      <button class="sync-btn sync-drive" onclick="connectSource('drive')">📁 Drive</button>
     </div>
   </div>
 
-  <!-- METAS DO MÃŠS -->
+  <!-- METAS DO MÊS -->
   <div class="card mb14">
-    <div class="ct">ðŸŽ¯ Metas de Abril 2026 â€” <span id="mem-sector-lbl" style="color:var(--o)">Produto/CS</span></div>
+    <div class="ct">🎯 Metas de Abril 2026 — <span id="mem-sector-lbl" style="color:var(--o)">Produto/CS</span></div>
     <div class="goals-g" id="goals-grid"></div>
   </div>
 
   <div class="g2">
     <div class="card">
-      <div class="ct">ðŸ“… Minhas ReuniÃµes de Hoje</div>
+      <div class="ct">📅 Minhas Reuniões de Hoje</div>
       <div id="my-meetings"></div>
     </div>
     <div class="card">
-      <div class="ct">ðŸ… Conquistas</div>
+      <div class="ct">🏅 Conquistas</div>
       <div class="achs" id="achievements"></div>
     </div>
   </div>
@@ -527,9 +519,9 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 <div class="ov hidden" id="modal">
   <div class="modal">
     <h3>Novo Projeto</h3>
-    <p>Adicione ao painel da 49 EducaÃ§Ã£o</p>
+    <p>Adicione ao painel da 49 Educação</p>
     <div class="field"><label>Nome</label><input id="m-n" placeholder="Ex: Sprint SU-AI #7"/></div>
-    <div class="field"><label>ResponsÃ¡vel</label>
+    <div class="field"><label>Responsável</label>
       <select id="m-o">
         <option>Tiago Toigo</option><option>Leandro Piazza</option><option>Luana Costa</option>
         <option>Lukas Tassi</option><option>Victor Motta</option><option>Marcelo Camara</option>
@@ -540,11 +532,11 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
     <div class="field"><label>Setor</label>
       <select id="m-s2">
         <option>Produto</option><option>Vendas</option><option>Marketing</option>
-        <option>CS</option><option>Tecnologia</option><option>LicitatÃ³rio</option><option>Backoffice</option>
+        <option>CS</option><option>Tecnologia</option><option>Licitatório</option><option>Backoffice</option>
       </select>
     </div>
     <div class="field"><label>Status</label>
-      <select id="m-st"><option>Em andamento</option><option>No prazo</option><option>Em risco</option><option>ConcluÃ­do</option></select>
+      <select id="m-st"><option>Em andamento</option><option>No prazo</option><option>Em risco</option><option>Concluído</option></select>
     </div>
     <div class="field"><label>Progresso %</label><input id="m-p" type="number" min="0" max="100" value="0"/></div>
     <div class="mf">
@@ -555,43 +547,43 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DATA â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════ DATA ═══════════════
 
 const TEAM = [
   { name:'Tiago Toigo',       i:'TT', bg:'#FFF0EB', fg:'#FF4F11', role:'Ger. Produto/CS',    sector:'produto',     pts:847, mtgs:22, status:'green',
     northstars:[
-      {l:'NPS alunos SU-AI',     v:'Media â‰¥ 90',  cur:'82',   target:'90',  ok:false},
+      {l:'NPS alunos SU-AI',     v:'Media ≥ 90',  cur:'82',   target:'90',  ok:false},
       {l:'R$/headcount',         v:'R$438k',       cur:'R$380k',target:'R$438k',ok:false},
-      {l:'NPS B2B projetos',     v:'â‰¥ 90',         cur:'x',    target:'90',  ok:null},
-      {l:'Taxa de conversÃ£o B2B',v:'x',            cur:'x',    target:'x',   ok:null},
+      {l:'NPS B2B projetos',     v:'≥ 90',         cur:'x',    target:'90',  ok:null},
+      {l:'Taxa de conversão B2B',v:'x',            cur:'x',    target:'x',   ok:null},
     ],
     goals:[
-      {ic:'ðŸŽ“',n:'NPS SU-AI',     cur:82,goal:90, c:'#FF4F11'},
-      {ic:'ðŸ¤',n:'Alinhamentos CS',cur:4, goal:6,  c:'#0A7A42'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:22,goal:30, c:'#1A5DAB'},
-      {ic:'ðŸš€',n:'Sprints entregues',cur:5,goal:6, c:'#6B3FCF'},
+      {ic:'🎓',n:'NPS SU-AI',     cur:82,goal:90, c:'#FF4F11'},
+      {ic:'🤝',n:'Alinhamentos CS',cur:4, goal:6,  c:'#0A7A42'},
+      {ic:'📅',n:'Reuniões',       cur:22,goal:30, c:'#1A5DAB'},
+      {ic:'🚀',n:'Sprints entregues',cur:5,goal:6, c:'#6B3FCF'},
     ]},
   { name:'Leandro Piazza',    i:'LP', bg:'#E6F4ED', fg:'#0A7A42', role:'CEO',                sector:'gestao',      pts:723, mtgs:14, status:'green',
     northstars:[
-      {l:'Runway financeiro',    v:'â‰¥ 6 meses',    cur:'9 meses',target:'6m', ok:true},
-      {l:'Gastos OÃ—R',           v:'â‰¤ 100%',        cur:'115%+',  target:'100%',ok:false},
+      {l:'Runway financeiro',    v:'≥ 6 meses',    cur:'9 meses',target:'6m', ok:true},
+      {l:'Gastos O×R',           v:'≤ 100%',        cur:'115%+',  target:'100%',ok:false},
     ],
     goals:[
-      {ic:'ðŸ’°',n:'Runway',         cur:9, goal:6,  c:'#0A7A42'},
-      {ic:'ðŸ“Š',n:'Gastos OÃ—R',     cur:85,goal:100,c:'#1A5DAB'},
-      {ic:'ðŸ¤',n:'Parcerias ativas',cur:3,goal:5,  c:'#FF4F11'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:14,goal:20, c:'#6B3FCF'},
+      {ic:'💰',n:'Runway',         cur:9, goal:6,  c:'#0A7A42'},
+      {ic:'📊',n:'Gastos O×R',     cur:85,goal:100,c:'#1A5DAB'},
+      {ic:'🤝',n:'Parcerias ativas',cur:3,goal:5,  c:'#FF4F11'},
+      {ic:'📅',n:'Reuniões',       cur:14,goal:20, c:'#6B3FCF'},
     ]},
   { name:'Luana Costa',       i:'LC', bg:'#EBF2FC', fg:'#1A5DAB', role:'Head Adm/Fin/RH',   sector:'backoffice',  pts:690, mtgs:18, status:'green',
     northstars:[
-      {l:'Runway â‰¥ 6 meses',    v:'9 meses',       cur:'9m',    target:'6m',  ok:true},
-      {l:'Gastos mensais OÃ—R',  v:'â‰¤ 100%',         cur:'115%+', target:'100%',ok:false},
+      {l:'Runway ≥ 6 meses',    v:'9 meses',       cur:'9m',    target:'6m',  ok:true},
+      {l:'Gastos mensais O×R',  v:'≤ 100%',         cur:'115%+', target:'100%',ok:false},
     ],
     goals:[
-      {ic:'ðŸ“‹',n:'Processos ADM',  cur:18,goal:21, c:'#1A5DAB'},
-      {ic:'ðŸ’¼',n:'RH â€” contrataÃ§Ãµes',cur:1,goal:2, c:'#0A7A42'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:18,goal:25, c:'#FF4F11'},
-      {ic:'âœ…',n:'Tarefas fechadas',cur:42,goal:50, c:'#6B3FCF'},
+      {ic:'📋',n:'Processos ADM',  cur:18,goal:21, c:'#1A5DAB'},
+      {ic:'💼',n:'RH — contratações',cur:1,goal:2, c:'#0A7A42'},
+      {ic:'📅',n:'Reuniões',       cur:18,goal:25, c:'#FF4F11'},
+      {ic:'✅',n:'Tarefas fechadas',cur:42,goal:50, c:'#6B3FCF'},
     ]},
   { name:'Victor Motta',      i:'VM', bg:'#EBF2FC', fg:'#1A5DAB', role:'Head Comercial',    sector:'vendas',      pts:580, mtgs:12, status:'green',
     northstars:[
@@ -600,10 +592,10 @@ const TEAM = [
       {l:'Tx conv B2B',          v:'(def.)',         cur:'8%',    target:'?',   ok:null},
     ],
     goals:[
-      {ic:'ðŸ’°',n:'Vendas B2C',     cur:178,goal:211,c:'#1A5DAB'},
-      {ic:'ðŸ“ž',n:'Calls realizados',cur:34, goal:50, c:'#FF4F11'},
-      {ic:'ðŸŽ¯',n:'Taxa conversÃ£o', cur:2,  goal:5,  c:'#0A7A42'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:12, goal:20, c:'#6B3FCF'},
+      {ic:'💰',n:'Vendas B2C',     cur:178,goal:211,c:'#1A5DAB'},
+      {ic:'📞',n:'Calls realizados',cur:34, goal:50, c:'#FF4F11'},
+      {ic:'🎯',n:'Taxa conversão', cur:2,  goal:5,  c:'#0A7A42'},
+      {ic:'📅',n:'Reuniões',       cur:12, goal:20, c:'#6B3FCF'},
     ]},
   { name:'Lukas Tassi',       i:'LT', bg:'#FEF6DF', fg:'#B87000', role:'Head de Marketing', sector:'marketing',   pts:480, mtgs:10, status:'yellow',
     northstars:[
@@ -611,62 +603,62 @@ const TEAM = [
       {l:'Custo por MQL',        v:'(def.)',         cur:'x',     target:'x',   ok:null},
     ],
     goals:[
-      {ic:'ðŸ“£',n:'MQLs gerados',   cur:60, goal:100,c:'#B87000'},
-      {ic:'ðŸ“±',n:'Posts Social',   cur:18, goal:30, c:'#FF4F11'},
-      {ic:'ðŸ“§',n:'Campanhas email',cur:3,  goal:5,  c:'#1A5DAB'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:10, goal:15, c:'#6B3FCF'},
+      {ic:'📣',n:'MQLs gerados',   cur:60, goal:100,c:'#B87000'},
+      {ic:'📱',n:'Posts Social',   cur:18, goal:30, c:'#FF4F11'},
+      {ic:'📧',n:'Campanhas email',cur:3,  goal:5,  c:'#1A5DAB'},
+      {ic:'📅',n:'Reuniões',       cur:10, goal:15, c:'#6B3FCF'},
     ]},
   { name:'Tamara Moraes',     i:'TM', bg:'#E6F4ED', fg:'#0A7A42', role:'As. Produto/CS',    sector:'cs',          pts:510, mtgs:9,  status:'green',
     northstars:[
-      {l:'EvasÃ£o SU-AI',         v:'â‰¤ 5%',           cur:'x',    target:'5%',  ok:null},
+      {l:'Evasão SU-AI',         v:'≤ 5%',           cur:'x',    target:'5%',  ok:null},
       {l:'Aulas assistidas',     v:'90%',             cur:'x',    target:'90%', ok:null},
-      {l:'PresenÃ§a B2B',         v:'85%',             cur:'x',    target:'85%', ok:null},
+      {l:'Presença B2B',         v:'85%',             cur:'x',    target:'85%', ok:null},
     ],
     goals:[
-      {ic:'ðŸ‘¥',n:'Alunos ativos',  cur:180,goal:200, c:'#0A7A42'},
-      {ic:'ðŸ“š',n:'Aulas entregues',cur:42, goal:48,  c:'#FF4F11'},
-      {ic:'ðŸ˜Š',n:'NPS individual', cur:88, goal:90,  c:'#1A5DAB'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:9,  goal:15,  c:'#6B3FCF'},
+      {ic:'👥',n:'Alunos ativos',  cur:180,goal:200, c:'#0A7A42'},
+      {ic:'📚',n:'Aulas entregues',cur:42, goal:48,  c:'#FF4F11'},
+      {ic:'😊',n:'NPS individual', cur:88, goal:90,  c:'#1A5DAB'},
+      {ic:'📅',n:'Reuniões',       cur:9,  goal:15,  c:'#6B3FCF'},
     ]},
   { name:'Maicon Silveira',   i:'MS', bg:'#EEF1F8', fg:'#0D1B3E', role:'Head Tecnologia',   sector:'tecnologia',  pts:390, mtgs:7,  status:'yellow',
     northstars:[
-      {l:'Entrega â‰¤ 45 dias',    v:'Tecnologia',      cur:'52d',  target:'45d', ok:false},
-      {l:'SatisfaÃ§Ã£o',           v:'TecnolÃ³gico 9',   cur:'x',    target:'9',   ok:null},
+      {l:'Entrega ≤ 45 dias',    v:'Tecnologia',      cur:'52d',  target:'45d', ok:false},
+      {l:'Satisfação',           v:'Tecnológico 9',   cur:'x',    target:'9',   ok:null},
       {l:'49Code faturamento',   v:'120k',            cur:'x',    target:'120k',ok:null},
-      {l:'Margem lÃ­quida',       v:'â‰¥ 40%',            cur:'20%',  target:'40%', ok:false},
+      {l:'Margem líquida',       v:'≥ 40%',            cur:'20%',  target:'40%', ok:false},
     ],
     goals:[
-      {ic:'âš™ï¸',n:'Entregas â‰¤ 45d', cur:3,  goal:5,  c:'#0D1B3E'},
-      {ic:'ðŸ›',n:'Bugs resolvidos', cur:12, goal:20, c:'#FF4F11'},
-      {ic:'ðŸš€',n:'Deploys',        cur:4,  goal:6,  c:'#1A5DAB'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',       cur:7,  goal:12, c:'#6B3FCF'},
+      {ic:'⚙️',n:'Entregas ≤ 45d', cur:3,  goal:5,  c:'#0D1B3E'},
+      {ic:'🐛',n:'Bugs resolvidos', cur:12, goal:20, c:'#FF4F11'},
+      {ic:'🚀',n:'Deploys',        cur:4,  goal:6,  c:'#1A5DAB'},
+      {ic:'📅',n:'Reuniões',       cur:7,  goal:12, c:'#6B3FCF'},
     ]},
   { name:'Rafael Peck',       i:'RP', bg:'#F3EFFE', fg:'#6B3FCF', role:'Ger. Backoffice',   sector:'licitatorio', pts:430, mtgs:8,  status:'green',
     northstars:[
-      {l:'RenovaÃ§Ãµes contratos', v:'R$2M',            cur:'R$993k',target:'R$2M',ok:false},
-      {l:'Recebs em renovaÃ§Ã£o',  v:'100% no prazo',   cur:'100%', target:'100%',ok:true},
+      {l:'Renovações contratos', v:'R$2M',            cur:'R$993k',target:'R$2M',ok:false},
+      {l:'Recebs em renovação',  v:'100% no prazo',   cur:'100%', target:'100%',ok:true},
     ],
     goals:[
-      {ic:'ðŸ“„',n:'Contratos renovados',cur:3, goal:5,  c:'#6B3FCF'},
-      {ic:'ðŸ’°',n:'Volume renovaÃ§Ãµes',  cur:993,goal:2000,c:'#FF4F11'},
-      {ic:'âš–ï¸',n:'Editais analisados', cur:8,  goal:12, c:'#1A5DAB'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',           cur:8,  goal:12, c:'#0A7A42'},
+      {ic:'📄',n:'Contratos renovados',cur:3, goal:5,  c:'#6B3FCF'},
+      {ic:'💰',n:'Volume renovações',  cur:993,goal:2000,c:'#FF4F11'},
+      {ic:'⚖️',n:'Editais analisados', cur:8,  goal:12, c:'#1A5DAB'},
+      {ic:'📅',n:'Reuniões',           cur:8,  goal:12, c:'#0A7A42'},
     ]},
   { name:'Eduarda Brosowicz', i:'EB', bg:'#FEE9F2', fg:'#B5286E', role:'Parcerias',         sector:'parcerias',   pts:310, mtgs:6,  status:'gray',
     northstars:[],
     goals:[
-      {ic:'ðŸ¤',n:'Parcerias fechadas', cur:2,  goal:5,  c:'#B5286E'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',           cur:6,  goal:10, c:'#1A5DAB'},
-      {ic:'ðŸ“‹',n:'Propostas enviadas', cur:4,  goal:8,  c:'#FF4F11'},
-      {ic:'âœ…',n:'Contratos assinados',cur:1,  goal:3,  c:'#0A7A42'},
+      {ic:'🤝',n:'Parcerias fechadas', cur:2,  goal:5,  c:'#B5286E'},
+      {ic:'📅',n:'Reuniões',           cur:6,  goal:10, c:'#1A5DAB'},
+      {ic:'📋',n:'Propostas enviadas', cur:4,  goal:8,  c:'#FF4F11'},
+      {ic:'✅',n:'Contratos assinados',cur:1,  goal:3,  c:'#0A7A42'},
     ]},
   { name:'Marcelo Camara',    i:'MC', bg:'#FDEAEA', fg:'#C42828', role:'Ger. Mkt/Comercial',sector:'vendas',      pts:270, mtgs:5,  status:'gray',
     northstars:[],
     goals:[
-      {ic:'ðŸ“£',n:'Campanhas ativas',   cur:2,  goal:4,  c:'#C42828'},
-      {ic:'ðŸŽ¯',n:'Leads qualificados', cur:28, goal:50, c:'#FF4F11'},
-      {ic:'ðŸ“…',n:'ReuniÃµes',           cur:5,  goal:10, c:'#1A5DAB'},
-      {ic:'ðŸ’°',n:'Pipeline comercial', cur:40, goal:80, c:'#0A7A42'},
+      {ic:'📣',n:'Campanhas ativas',   cur:2,  goal:4,  c:'#C42828'},
+      {ic:'🎯',n:'Leads qualificados', cur:28, goal:50, c:'#FF4F11'},
+      {ic:'📅',n:'Reuniões',           cur:5,  goal:10, c:'#1A5DAB'},
+      {ic:'💰',n:'Pipeline comercial', cur:40, goal:80, c:'#0A7A42'},
     ]},
 ];
 
@@ -677,38 +669,38 @@ const SECTOR_COLORS = {
 };
 
 const NORTH_STARS_SECTORS = [
-  { sector:'Marketing',    owner:'Lukas Tassi',    color:'#B87000', ic:'ðŸ“£', bg:'#FEF6DF',
-    metrics:[{n:'MQLs gerados (EficÃ¡cia)',v:'(def.)',s:null},{n:'Custo por MQL (EficiÃªncia)',v:'(def.)',s:null}],
-    challenge:'Falta definir mÃ©tricas base para o funil de MQLs.',
+  { sector:'Marketing',    owner:'Lukas Tassi',    color:'#B87000', ic:'📣', bg:'#FEF6DF',
+    metrics:[{n:'MQLs gerados (Eficácia)',v:'(def.)',s:null},{n:'Custo por MQL (Eficiência)',v:'(def.)',s:null}],
+    challenge:'Falta definir métricas base para o funil de MQLs.',
     actions:['Estruturar funil TOFU/MOFU','Definir custo por canal'] },
-  { sector:'Vendas B2C',   owner:'Victor + Marcelo', color:'#0A7A42', ic:'ðŸ’°', bg:'#E6F4ED',
-    metrics:[{n:'211 vendas / R$1.3M (EficÃ¡cia)',v:'178 vendas',s:false},{n:'Tx Conv. TOFU 5% (EficiÃªncia)',v:'2.25% atual',s:false},{n:'Tx Conv. Op-venda 35%',v:'37.5%',s:true}],
-    challenge:'Falta de novos leads. Demora atÃ© comeÃ§ar a rodar a mÃ¡quina comercial.',
-    actions:['Rodar nova mÃ¡quina comercial','Rampar equipe (1 closer + 2 SDRs)'] },
-  { sector:'Produto',      owner:'Tiago Toigo',    color:'#6B3FCF', ic:'ðŸŽ“', bg:'#F3EFFE',
-    metrics:[{n:'NPS â‰¥ 90 SU-AI (EficÃ¡cia)',v:'82 atual',s:false},{n:'R$438k/headcount (EficiÃªncia)',v:'R$380k',s:false},{n:'NPS B2B â‰¥ 90',v:'(def.)',s:null}],
+  { sector:'Vendas B2C',   owner:'Victor + Marcelo', color:'#0A7A42', ic:'💰', bg:'#E6F4ED',
+    metrics:[{n:'211 vendas / R$1.3M (Eficácia)',v:'178 vendas',s:false},{n:'Tx Conv. TOFU 5% (Eficiência)',v:'2.25% atual',s:false},{n:'Tx Conv. Op-venda 35%',v:'37.5%',s:true}],
+    challenge:'Falta de novos leads. Demora até começar a rodar a máquina comercial.',
+    actions:['Rodar nova máquina comercial','Rampar equipe (1 closer + 2 SDRs)'] },
+  { sector:'Produto',      owner:'Tiago Toigo',    color:'#6B3FCF', ic:'🎓', bg:'#F3EFFE',
+    metrics:[{n:'NPS ≥ 90 SU-AI (Eficácia)',v:'82 atual',s:false},{n:'R$438k/headcount (Eficiência)',v:'R$380k',s:false},{n:'NPS B2B ≥ 90',v:'(def.)',s:null}],
     challenge:'(def.)',
-    actions:['Definir aÃ§Ãµes estratÃ©gicas'] },
-  { sector:'CS',           owner:'Tamara Moraes',  color:'#B5286E', ic:'ðŸ¤', bg:'#FEE9F2',
-    metrics:[{n:'EvasÃ£o â‰¤ 5% SU-AI (EficÃ¡cia)',v:'(monit.)',s:null},{n:'90% aulas assistidas (EficiÃªncia)',v:'(monit.)',s:null},{n:'85% PresenÃ§a B2B',v:'0% atual',s:false}],
+    actions:['Definir ações estratégicas'] },
+  { sector:'CS',           owner:'Tamara Moraes',  color:'#B5286E', ic:'🤝', bg:'#FEE9F2',
+    metrics:[{n:'Evasão ≤ 5% SU-AI (Eficácia)',v:'(monit.)',s:null},{n:'90% aulas assistidas (Eficiência)',v:'(monit.)',s:null},{n:'85% Presença B2B',v:'0% atual',s:false}],
     challenge:'Acompanhar o ritmo do fluxo de mensagens.',
-    actions:['Implementar ferramenta integraÃ§Ã£o WhatsApp','Acompanhar presenÃ§a ao vivo com aÃ§Ãµes de mitigaÃ§Ã£o'] },
-  { sector:'Tecnologia',   owner:'Maicon Silveira', color:'#0D1B3E', ic:'âš™ï¸', bg:'#EEF1F8',
-    metrics:[{n:'Entrega â‰¤ 45 dias (EficÃ¡cia)',v:'52 dias atual',s:false},{n:'SatisfaÃ§Ã£o TecnolÃ³gico 9',v:'(def.)',s:null},{n:'49Code 120k fat.',v:'(def.)',s:null},{n:'Margem lÃ­quida â‰¥ 40%',v:'20% atual',s:false}],
+    actions:['Implementar ferramenta integração WhatsApp','Acompanhar presença ao vivo com ações de mitigação'] },
+  { sector:'Tecnologia',   owner:'Maicon Silveira', color:'#0D1B3E', ic:'⚙️', bg:'#EEF1F8',
+    metrics:[{n:'Entrega ≤ 45 dias (Eficácia)',v:'52 dias atual',s:false},{n:'Satisfação Tecnológico 9',v:'(def.)',s:null},{n:'49Code 120k fat.',v:'(def.)',s:null},{n:'Margem líquida ≥ 40%',v:'20% atual',s:false}],
     challenge:'(def.)',
-    actions:['Definir aÃ§Ãµes estratÃ©gicas'] },
-  { sector:'Financeiro',   owner:'Luana Costa',    color:'#1A5DAB', ic:'ðŸ’µ', bg:'#EBF2FC',
-    metrics:[{n:'Runway â‰¥ 6 meses (EficÃ¡cia)',v:'9 meses',s:true},{n:'Gastos mensais OÃ—R â‰¤ 100%',v:'115%+',s:false}],
-    challenge:'CobranÃ§a / autonomia para tomada de decisÃµes fora do orÃ§amento.',
+    actions:['Definir ações estratégicas'] },
+  { sector:'Financeiro',   owner:'Luana Costa',    color:'#1A5DAB', ic:'💵', bg:'#EBF2FC',
+    metrics:[{n:'Runway ≥ 6 meses (Eficácia)',v:'9 meses',s:true},{n:'Gastos mensais O×R ≤ 100%',v:'115%+',s:false}],
+    challenge:'Cobrança / autonomia para tomada de decisões fora do orçamento.',
     actions:['(def.)'] },
-  { sector:'LicitatÃ³rio',  owner:'Rafael Peck',    color:'#6B3FCF', ic:'ðŸ“„', bg:'#F3EFFE',
-    metrics:[{n:'R$2M renovaÃ§Ãµes (EficÃ¡cia)',v:'R$993k atual',s:false},{n:'Receb. renovaÃ§Ã£o 100% prazo',v:'100% âœ“',s:true}],
-    challenge:'Alto fluxo de demandas abertas estÃ¡ ocasionando atrasos.',
-    actions:['ConstruÃ§Ã£o de um radar de licitaÃ§Ãµes','ContrataÃ§Ã£o de equipe de apoio'] },
-  { sector:'Customer Success (Maturidade)',owner:'Tamara',color:'#B5286E',ic:'ðŸ“Š',bg:'#FEE9F2',
-    metrics:[{n:'Maturidade â€” Alta',v:'69% (20 proc.)',s:true},{n:'Maturidade â€” MÃ©dia',v:'17% (5 proc.)',s:null},{n:'Maturidade â€” Baixa',v:'14% (4 proc.)',s:false}],
-    challenge:'Monitorar presenÃ§a ao vivo.',
-    actions:['Playbook X','Playbook Y','GestÃ£o de Pastas/Drive'] },
+  { sector:'Licitatório',  owner:'Rafael Peck',    color:'#6B3FCF', ic:'📄', bg:'#F3EFFE',
+    metrics:[{n:'R$2M renovações (Eficácia)',v:'R$993k atual',s:false},{n:'Receb. renovação 100% prazo',v:'100% ✓',s:true}],
+    challenge:'Alto fluxo de demandas abertas está ocasionando atrasos.',
+    actions:['Construção de um radar de licitações','Contratação de equipe de apoio'] },
+  { sector:'Customer Success (Maturidade)',owner:'Tamara',color:'#B5286E',ic:'📊',bg:'#FEE9F2',
+    metrics:[{n:'Maturidade — Alta',v:'69% (20 proc.)',s:true},{n:'Maturidade — Média',v:'17% (5 proc.)',s:null},{n:'Maturidade — Baixa',v:'14% (4 proc.)',s:false}],
+    challenge:'Monitorar presença ao vivo.',
+    actions:['Playbook X','Playbook Y','Gestão de Pastas/Drive'] },
 ];
 
 const MATURITY = [
@@ -718,52 +710,52 @@ const MATURITY = [
   {s:'Tecnologia',   color:'#0D1B3E', macro:8,  proc:32, alta:19, pctA:59, media:12, pctM:38, baixa:1,  pctB:3,  inex:0 },
   {s:'Customer Success',color:'#B5286E',macro:5,proc:29,alta:20,pctA:69,  media:5,  pctM:17, baixa:4,  pctB:14, inex:0 },
   {s:'Financeiro/RH',color:'#1A5DAB', macro:5,  proc:21, alta:10, pctA:48, media:5,  pctM:24, baixa:3,  pctB:14, inex:3 },
-  {s:'LicitatÃ³rio',  color:'#6B3FCF', macro:11, proc:41, alta:23, pctA:56, media:14, pctM:34, baixa:3,  pctB:8,  inex:1 },
+  {s:'Licitatório',  color:'#6B3FCF', macro:11, proc:41, alta:23, pctA:56, media:14, pctM:34, baixa:3,  pctB:8,  inex:1 },
 ];
 
 const MEETINGS_TODAY = [
-  {t:'09:00',n:'Daily â€” Produto 49',           p:7,  c:'#1A5DAB',tag:'Daily'},
+  {t:'09:00',n:'Daily — Produto 49',           p:7,  c:'#1A5DAB',tag:'Daily'},
   {t:'11:00',n:'Mentoria Gestores SATC',        p:1,  c:'#0A7A42',tag:'Mentoria'},
   {t:'11:30',n:'Mentoria Startups SATC',        p:20, c:'#0A7A42',tag:'Mentoria'},
-  {t:'13:00',n:'Hackathon â€” Leo Ã— Claude',      p:17, c:'#FF4F11',tag:'Hackathon'},
-  {t:'14:30',n:'Tiago Ã— Nick â€” Catch up',       p:2,  c:'#6B3FCF',tag:'1:1'},
-  {t:'15:30',n:'Review | OperaÃ§Ãµes',            p:5,  c:'#B87000',tag:'Review'},
-  {t:'16:00',n:'Alinhamento SUAI â€” Moscoski',   p:5,  c:'#0A7A42',tag:'Alinhamento'},
-  {t:'18:00',n:'Hackathon â€” Demandas/Squads',   p:17, c:'#FF4F11',tag:'Hackathon'},
+  {t:'13:00',n:'Hackathon — Leo × Claude',      p:17, c:'#FF4F11',tag:'Hackathon'},
+  {t:'14:30',n:'Tiago × Nick — Catch up',       p:2,  c:'#6B3FCF',tag:'1:1'},
+  {t:'15:30',n:'Review | Operações',            p:5,  c:'#B87000',tag:'Review'},
+  {t:'16:00',n:'Alinhamento SUAI — Moscoski',   p:5,  c:'#0A7A42',tag:'Alinhamento'},
+  {t:'18:00',n:'Hackathon — Demandas/Squads',   p:17, c:'#FF4F11',tag:'Hackathon'},
 ];
 
 let PROJECTS = [
-  {n:'Startup University AI',   o:'Tiago Toigo',   s:'Em andamento',p:68,ic:'ðŸŽ“',c:'#1A5DAB',sec:'Produto'},
-  {n:'Hackathon Freccia Ã— 49',  o:'Luana Costa',   s:'Em andamento',p:45,ic:'âš¡',c:'#FF4F11',sec:'Produto'},
-  {n:'Primeiras Vendas START',  o:'Tiago Toigo',   s:'No prazo',    p:80,ic:'ðŸ“ˆ',c:'#0A7A42',sec:'Vendas'},
-  {n:'Mentorias SATC',          o:'Leandro Piazza', s:'No prazo',   p:90,ic:'ðŸ¤',c:'#0A7A42',sec:'CS'},
-  {n:'Pitch Deck Veins',        o:'Tiago Toigo',   s:'Em risco',    p:30,ic:'ðŸ“Š',c:'#B87000',sec:'Produto'},
-  {n:'ComunicaÃ§Ãµes Tina AI',    o:'Victor Motta',  s:'Em andamento',p:55,ic:'ðŸ¤–',c:'#6B3FCF',sec:'Tecnologia'},
-  {n:'49Code â€” Pipeline',       o:'Maicon Silveira',s:'Em andamento',p:40,ic:'ðŸ’»',c:'#0D1B3E',sec:'Tecnologia'},
-  {n:'Radar LicitaÃ§Ãµes B2B',    o:'Rafael Peck',   s:'Em andamento',p:25,ic:'ðŸ“„',c:'#6B3FCF',sec:'LicitatÃ³rio'},
+  {n:'Startup University AI',   o:'Tiago Toigo',   s:'Em andamento',p:68,ic:'🎓',c:'#1A5DAB',sec:'Produto'},
+  {n:'Hackathon Freccia × 49',  o:'Luana Costa',   s:'Em andamento',p:45,ic:'⚡',c:'#FF4F11',sec:'Produto'},
+  {n:'Primeiras Vendas START',  o:'Tiago Toigo',   s:'No prazo',    p:80,ic:'📈',c:'#0A7A42',sec:'Vendas'},
+  {n:'Mentorias SATC',          o:'Leandro Piazza', s:'No prazo',   p:90,ic:'🤝',c:'#0A7A42',sec:'CS'},
+  {n:'Pitch Deck Veins',        o:'Tiago Toigo',   s:'Em risco',    p:30,ic:'📊',c:'#B87000',sec:'Produto'},
+  {n:'Comunicações Tina AI',    o:'Victor Motta',  s:'Em andamento',p:55,ic:'🤖',c:'#6B3FCF',sec:'Tecnologia'},
+  {n:'49Code — Pipeline',       o:'Maicon Silveira',s:'Em andamento',p:40,ic:'💻',c:'#0D1B3E',sec:'Tecnologia'},
+  {n:'Radar Licitações B2B',    o:'Rafael Peck',   s:'Em andamento',p:25,ic:'📄',c:'#6B3FCF',sec:'Licitatório'},
 ];
 
 const WEEK = {'Seg':6,'Ter':5,'Qua':5,'Qui':3,'Sex':2};
 
 const ACHIEVEMENTS = [
-  {ic:'ðŸ”¥',n:'Streak 7d',   d:'7 dias seguidos',unlocked:true},
-  {ic:'ðŸ†',n:'Top ReuniÃ£o', d:'20+ reuniÃµes',   unlocked:true},
-  {ic:'âš¡',n:'Hackathon',   d:'Participou',     unlocked:true},
-  {ic:'ðŸŽ“',n:'Mentor',      d:'5 mentorias',    unlocked:true},
-  {ic:'ðŸš€',n:'Sprint Hero', d:'3 sprints',      unlocked:false},
-  {ic:'ðŸ’¬',n:'Comunicador', d:'50 e-mails',     unlocked:false},
-  {ic:'ðŸŒŸ',n:'MVP MÃªs',     d:'1Âº no ranking',  unlocked:false},
-  {ic:'ðŸŽ¯',n:'Meta 100%',   d:'Todas as metas', unlocked:false},
+  {ic:'🔥',n:'Streak 7d',   d:'7 dias seguidos',unlocked:true},
+  {ic:'🏆',n:'Top Reunião', d:'20+ reuniões',   unlocked:true},
+  {ic:'⚡',n:'Hackathon',   d:'Participou',     unlocked:true},
+  {ic:'🎓',n:'Mentor',      d:'5 mentorias',    unlocked:true},
+  {ic:'🚀',n:'Sprint Hero', d:'3 sprints',      unlocked:false},
+  {ic:'💬',n:'Comunicador', d:'50 e-mails',     unlocked:false},
+  {ic:'🌟',n:'MVP Mês',     d:'1º no ranking',  unlocked:false},
+  {ic:'🎯',n:'Meta 100%',   d:'Todas as metas', unlocked:false},
 ];
 
 const ALERTS = [
-  {t:'a-warn',ic:'âš ï¸',ti:'Pitch Deck Veins â€” 30% progresso',de:'ApresentaÃ§Ã£o agendada 30/03. Risco de entrega.'},
-  {t:'a-warn',ic:'âš ï¸',ti:'Vendas B2C: Tx Conv. 2.25% vs meta 5%',de:'MÃ¡quina comercial ainda nÃ£o rodando. AÃ§Ã£o urgente.'},
-  {t:'a-info',ic:'â„¹ï¸',ti:'Hackathon encerra 31/03',de:'5 dias com 17 participantes. Verificar pendÃªncias abertas.'},
-  {t:'a-ok',  ic:'âœ…',ti:'Mentorias SATC â€” 90% concluÃ­do',de:'Leandro responsÃ¡vel. PrÃ³xima sessÃ£o: hoje 11h.'},
+  {t:'a-warn',ic:'⚠️',ti:'Pitch Deck Veins — 30% progresso',de:'Apresentação agendada 30/03. Risco de entrega.'},
+  {t:'a-warn',ic:'⚠️',ti:'Vendas B2C: Tx Conv. 2.25% vs meta 5%',de:'Máquina comercial ainda não rodando. Ação urgente.'},
+  {t:'a-info',ic:'ℹ️',ti:'Hackathon encerra 31/03',de:'5 dias com 17 participantes. Verificar pendências abertas.'},
+  {t:'a-ok',  ic:'✅',ti:'Mentorias SATC — 90% concluído',de:'Leandro responsável. Próxima sessão: hoje 11h.'},
 ];
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RENDERS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════ RENDERS ═══════════════
 
 let currentMember = 0;
 let chartInited = {};
@@ -779,10 +771,10 @@ function renderSidebarTeam() {
 
 function renderKPIs() {
   document.getElementById('kpi-strip').innerHTML = [
-    {l:'ReuniÃµes Hoje', v:MEETINGS_TODAY.length, s:'â†‘ 2 vs. ontem', c:'var(--o)', t:'up'},
+    {l:'Reuniões Hoje', v:MEETINGS_TODAY.length, s:'↑ 2 vs. ontem', c:'var(--o)', t:'up'},
     {l:'Membros Ativos',v:TEAM.filter(t=>t.status!=='gray').length, s:`de ${TEAM.length} no time`, c:'var(--green)'},
     {l:'Projetos Ativos',v:PROJECTS.filter(p=>p.s.includes('andamento')).length, s:'1 em risco', c:'var(--blue)'},
-    {l:'Semana (reuniÃµes)',v:Object.values(WEEK).reduce((a,b)=>a+b,0),s:'Seg a Sex',c:'var(--yellow)'},
+    {l:'Semana (reuniões)',v:Object.values(WEEK).reduce((a,b)=>a+b,0),s:'Seg a Sex',c:'var(--yellow)'},
   ].map(k=>`
     <div class="kpi"><div class="kpi-accent" style="background:${k.c}"></div>
       <div class="kpi-lbl">${k.l}</div>
@@ -804,13 +796,13 @@ function renderMeetingsToday() {
 
 function renderProjects(id, lim) {
   const list = lim ? PROJECTS.slice(0,lim) : PROJECTS;
-  const bc = {'Em andamento':'b-b','No prazo':'b-g','Em risco':'b-y','ConcluÃ­do':'b-gr'};
+  const bc = {'Em andamento':'b-b','No prazo':'b-g','Em risco':'b-y','Concluído':'b-gr'};
   const el = document.getElementById(id);
   if(!el) return;
   el.innerHTML = list.map(p=>`
     <div class="pr">
       <div class="pr-ico" style="background:${p.c}18">${p.ic}</div>
-      <div class="pr-info"><div class="pr-name">${p.n}</div><div class="pr-own">${p.o} Â· ${p.sec}</div></div>
+      <div class="pr-info"><div class="pr-name">${p.n}</div><div class="pr-own">${p.o} · ${p.sec}</div></div>
       <div class="pbar-w"><div class="pbar"><div class="pbar-f" style="width:${p.p}%;background:${p.c}"></div></div><div class="pbar-l">${p.p}%</div></div>
       <span class="badge ${bc[p.s]||'b-gr'}">${p.s}</span>
     </div>`).join('');
@@ -840,27 +832,27 @@ function renderTeamChart() {
 
 function renderAgenda() {
   const days = [
-    {lbl:'Hoje â€” Sex 27/03',c:'var(--o)',mtgs:MEETINGS_TODAY},
+    {lbl:'Hoje — Sex 27/03',c:'var(--o)',mtgs:MEETINGS_TODAY},
     {lbl:'Seg 30/03',c:'var(--g400)',mtgs:[
       {t:'09:00',n:'Daily Produto 49',p:7,c:'#1A5DAB',tag:'Daily'},
-      {t:'09:00',n:'Hackathon â€” Freccia/Ajustes',p:17,c:'#FF4F11',tag:'Hackathon'},
-      {t:'10:00',n:'ApresentaÃ§Ã£o Freccia Ã— 49',p:19,c:'#FF4F11',tag:'Evento'},
-      {t:'10:00',n:'[PITCH DECK] Veins Ã— Balestilha&49',p:5,c:'#6B3FCF',tag:'Pitch'},
-      {t:'11:00',n:'Email + WhatsApp | Gestores SC',p:2,c:'#0A7A42',tag:'RÃ©gua'},
-      {t:'19:00',n:'SPRINT 06 SU AI â€” Go To Market',p:1,c:'#0A7A42',tag:'Sprint'},
+      {t:'09:00',n:'Hackathon — Freccia/Ajustes',p:17,c:'#FF4F11',tag:'Hackathon'},
+      {t:'10:00',n:'Apresentação Freccia × 49',p:19,c:'#FF4F11',tag:'Evento'},
+      {t:'10:00',n:'[PITCH DECK] Veins × Balestilha&49',p:5,c:'#6B3FCF',tag:'Pitch'},
+      {t:'11:00',n:'Email + WhatsApp | Gestores SC',p:2,c:'#0A7A42',tag:'Régua'},
+      {t:'19:00',n:'SPRINT 06 SU AI — Go To Market',p:1,c:'#0A7A42',tag:'Sprint'},
     ]},
     {lbl:'Ter 31/03',c:'var(--g400)',mtgs:[
       {t:'09:00',n:'Daily Produto 49',p:7,c:'#1A5DAB',tag:'Daily'},
-      {t:'10:00',n:'START â€” Primeiras Vendas [Aula 06]',p:1,c:'#0A7A42',tag:'Aula'},
-      {t:'15:30',n:'Alinhamento Primeiras Vendas â€” SEBRAE',p:4,c:'#B87000',tag:'Parceiro'},
-      {t:'19:00',n:'HOTSEAT | SU AI â€” NegÃ³cios',p:1,c:'#0A7A42',tag:'Hotseat'},
+      {t:'10:00',n:'START — Primeiras Vendas [Aula 06]',p:1,c:'#0A7A42',tag:'Aula'},
+      {t:'15:30',n:'Alinhamento Primeiras Vendas — SEBRAE',p:4,c:'#B87000',tag:'Parceiro'},
+      {t:'19:00',n:'HOTSEAT | SU AI — Negócios',p:1,c:'#0A7A42',tag:'Hotseat'},
     ]},
     {lbl:'Qua 01/04',c:'var(--g400)',mtgs:[
       {t:'09:00',n:'Daily Produto 49',p:7,c:'#1A5DAB',tag:'Daily'},
       {t:'10:00',n:'Alinhamento Individual CS (Jader)',p:3,c:'#0A7A42',tag:'CS'},
-      {t:'11:00',n:'Gargalos | OperaÃ§Ãµes',p:5,c:'#B87000',tag:'Review'},
-      {t:'14:00',n:'GestÃ£o & Produto â€” Semanal',p:2,c:'#6B3FCF',tag:'GestÃ£o'},
-      {t:'19:00',n:'HOTSEAT | SU AI â€” Tecnologia',p:1,c:'#0A7A42',tag:'Hotseat'},
+      {t:'11:00',n:'Gargalos | Operações',p:5,c:'#B87000',tag:'Review'},
+      {t:'14:00',n:'Gestão & Produto — Semanal',p:2,c:'#6B3FCF',tag:'Gestão'},
+      {t:'19:00',n:'HOTSEAT | SU AI — Tecnologia',p:1,c:'#0A7A42',tag:'Hotseat'},
     ]},
   ];
   document.getElementById('agenda-full').innerHTML = days.map(d=>`
@@ -876,19 +868,19 @@ function renderNorthStars() {
         <div class="ns-ico" style="background:${ns.bg}">${ns.ic}</div>
         <div><div class="ns-sector" style="color:${ns.color}">${ns.sector}</div><div class="ns-owner">${ns.owner}</div></div>
       </div>
-      <div class="ns-star">â­ North Star Metrics</div>
+      <div class="ns-star">⭐ North Star Metrics</div>
       ${ns.metrics.map(m=>`
         <div class="ns-metric">
           <span class="ns-metric-name">${m.n}</span>
           <div style="display:flex;align-items:center;gap:6px">
             <span class="ns-metric-val" style="color:${m.s===true?'var(--green)':m.s===false?'var(--red)':'var(--g400)'}">${m.v}</span>
-            ${m.s===true?'<span class="ns-status" style="background:var(--gs);color:var(--green)">âœ“</span>':
-              m.s===false?'<span class="ns-status" style="background:var(--rs);color:var(--red)">â†“</span>':
-              '<span class="ns-status" style="background:var(--g100);color:var(--g400)">â€”</span>'}
+            ${m.s===true?'<span class="ns-status" style="background:var(--gs);color:var(--green)">✓</span>':
+              m.s===false?'<span class="ns-status" style="background:var(--rs);color:var(--red)">↓</span>':
+              '<span class="ns-status" style="background:var(--g100);color:var(--g400)">—</span>'}
           </div>
         </div>`).join('')}
       <div class="challenge">
-        <div class="challenge-lbl">ðŸ”´ Desafio Atual</div>
+        <div class="challenge-lbl">🔴 Desafio Atual</div>
         <div class="challenge-txt">${ns.challenge}</div>
       </div>
     </div>`).join('');
@@ -899,7 +891,7 @@ function renderMaturity() {
     const ctx = document.getElementById('chart-mat');
     if(ctx) {
       new Chart(ctx,{type:'doughnut',data:{
-        labels:['Alta (49%)','MÃ©dia (31%)','Baixa (16%)','Inexistente (4%)'],
+        labels:['Alta (49%)','Média (31%)','Baixa (16%)','Inexistente (4%)'],
         datasets:[{data:[114,73,37,9],backgroundColor:['#22C55E','#EAB308','#EF4444','#D1D5DB'],borderWidth:0,hoverOffset:4}]
       },options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
         plugins:{legend:{position:'right',labels:{color:'#6B6864',font:{size:11},boxWidth:10,padding:10}}}}});
@@ -909,7 +901,7 @@ function renderMaturity() {
   document.getElementById('mat-table').innerHTML = `
     <thead><tr>
       <th>Setor</th><th>Macro</th><th>Processos</th>
-      <th>Alta</th><th>MÃ©dia</th><th>Baixa</th><th>Inex.</th>
+      <th>Alta</th><th>Média</th><th>Baixa</th><th>Inex.</th>
     </tr></thead>
     <tbody>${MATURITY.map(m=>`
       <tr>
@@ -945,10 +937,10 @@ function renderMaturity() {
 function renderLeaderboard() {
   const sorted = [...TEAM].sort((a,b)=>b.pts-a.pts);
   const maxPts = sorted[0].pts;
-  const badges = [['ðŸ”¥','ðŸ†'],['ðŸ”¥','âš¡'],['ðŸŽ“','ðŸ¤'],['ðŸ“…'],['ðŸ’¬'],['ðŸš€'],['â­'],['ðŸ“Œ'],['âœ‰ï¸'],['ðŸ“Š']];
+  const badges = [['🔥','🏆'],['🔥','⚡'],['🎓','🤝'],['📅'],['💬'],['🚀'],['⭐'],['📌'],['✉️'],['📊']];
   document.getElementById('leaderboard').innerHTML = sorted.map((m,i)=>`
     <div class="lb-row">
-      <span class="lb-rank ${i===0?'r1':i===1?'r2':i===2?'r3':'r-n'}">${i===0?'ðŸ¥‡':i===1?'ðŸ¥ˆ':i===2?'ðŸ¥‰':i+1}</span>
+      <span class="lb-rank ${i===0?'r1':i===1?'r2':i===2?'r3':'r-n'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
       <div class="lb-av" style="background:${m.bg};color:${m.fg};width:34px;height:34px;font-size:12px;font-weight:700">${m.i}</div>
       <div class="lb-info"><div class="lb-name">${m.name}</div><div class="lb-role">${m.role}</div></div>
       <div class="lb-bgs">${(badges[i]||['']).map(b=>`<span>${b}</span>`).join('')}</div>
@@ -974,7 +966,7 @@ function renderMemberView(idx) {
   document.getElementById('hero-av').style.background = m.bg;
   document.getElementById('hero-av').style.color = m.fg;
   document.getElementById('hero-name').textContent = m.name;
-  document.getElementById('hero-sub').textContent = `${m.name.toLowerCase().replace(' ','.')}@49educacao.com.br Â· ${m.role}`;
+  document.getElementById('hero-sub').textContent = `${m.name.toLowerCase().replace(' ','.')}@49educacao.com.br · ${m.role}`;
   // Stats
   const rank = [...TEAM].sort((a,b)=>b.pts-a.pts).findIndex(t=>t.name===m.name)+1;
   document.getElementById('h-mtgs').textContent = m.mtgs;
@@ -982,21 +974,21 @@ function renderMemberView(idx) {
   document.getElementById('h-rank').textContent = `#${rank}`;
   // XP
   const lvl = m.pts >= 800 ? 4 : m.pts >= 600 ? 3 : m.pts >= 400 ? 2 : 1;
-  const lvlNames = ['','Iniciante','Colaborador','Especialista','LÃ­der','Mestre'];
-  document.getElementById('xp-badge').textContent = `NÃ­vel ${lvl} Â· ${lvlNames[lvl]}`;
-  document.getElementById('xp-next').textContent = `${m.pts} / ${lvl*250} XP para NÃ­vel ${lvl+1}`;
+  const lvlNames = ['','Iniciante','Colaborador','Especialista','Líder','Mestre'];
+  document.getElementById('xp-badge').textContent = `Nível ${lvl} · ${lvlNames[lvl]}`;
+  document.getElementById('xp-next').textContent = `${m.pts} / ${lvl*250} XP para Nível ${lvl+1}`;
   document.getElementById('xp-fill').style.width = Math.min(100,Math.round(m.pts/(lvl*250)*100))+'%';
   // North Star
   document.getElementById('ns-ind').style.borderTop = `2px solid ${m.fg}`;
   const nsTitle = document.querySelector('.ns-ind-t');
-  if(nsTitle) nsTitle.textContent = `â­ North Star â€” ${m.role}`;
+  if(nsTitle) nsTitle.textContent = `⭐ North Star — ${m.role}`;
   document.getElementById('ns-ind-metrics').innerHTML = m.northstars.length ?
     m.northstars.map(ns=>`
       <div class="ns-metric-ind">
         <span class="ns-ind-lbl">${ns.l}</span>
         <div class="ns-ind-val">
           <span class="ns-ind-num" style="color:${ns.ok===true?'#2ED472':ns.ok===false?'#FF7A44':'rgba(255,255,255,.5)'}">${ns.cur}</span>
-          <span class="ns-ind-status ${ns.ok===true?'s-ok':ns.ok===false?'s-warn':'s-na'}">${ns.ok===true?'âœ“ meta':ns.ok===false?'â†“ abaixo':'â€” def.'}</span>
+          <span class="ns-ind-status ${ns.ok===true?'s-ok':ns.ok===false?'s-warn':'s-na'}">${ns.ok===true?'✓ meta':ns.ok===false?'↓ abaixo':'— def.'}</span>
         </div>
       </div>`).join('') :
     '<div style="font-size:12px;color:rgba(255,255,255,.35);padding:8px 0">North Stars a definir para este setor.</div>';
@@ -1025,17 +1017,17 @@ function renderMemberView(idx) {
     </div>`).join('');
   // Reset sync box
   document.getElementById('sync-box').innerHTML = `
-    <div class="sync-t">ðŸ“¡ Sincronize sua Agenda, E-mail e Drive</div>
-    <div class="sync-s">Conecte o Google Workspace para enriquecimento automÃ¡tico dos seus KPIs</div>
+    <div class="sync-t">📡 Sincronize sua Agenda, E-mail e Drive</div>
+    <div class="sync-s">Conecte o Google Workspace para enriquecimento automático dos seus KPIs</div>
     <div class="sync-btns">
-      <button class="sync-btn sync-cal" onclick="connectSource('cal')">ðŸ“… Calendar</button>
-      <button class="sync-btn sync-mail" onclick="connectSource('mail')">âœ‰ï¸ Gmail</button>
-      <button class="sync-btn sync-drive" onclick="connectSource('drive')">ðŸ“ Drive</button>
+      <button class="sync-btn sync-cal" onclick="connectSource('cal')">📅 Calendar</button>
+      <button class="sync-btn sync-mail" onclick="connectSource('mail')">✉️ Gmail</button>
+      <button class="sync-btn sync-drive" onclick="connectSource('drive')">📁 Drive</button>
     </div>`;
   currentMember = idx;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NAVIGATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════ NAVIGATION ═══════════════
 
 const TABS = {dash:'tab-dash',agenda:'tab-agenda',projetos:'tab-projetos',northstars:'tab-northstars',maturidade:'tab-maturidade',ranking:'tab-ranking',alertas:'tab-alertas'};
 let currentTab = 'dash';
@@ -1067,7 +1059,7 @@ function setView(v, btn) {
     renderMemberView(currentMember);
     document.getElementById('sidebar').innerHTML = `
       <div class="nl">Meu Painel</div>
-      <div class="ni active" style="background:var(--o2);color:var(--o)"><span>ðŸ‘¤</span> VisÃ£o Pessoal</div>
+      <div class="ni active" style="background:var(--o2);color:var(--o)"><span>👤</span> Visão Pessoal</div>
       <div class="nl" style="margin-top:16px">Trocar Membro</div>
       ${TEAM.map((m,i)=>`
         <div class="member-row" onclick="switchMember(${i})">
@@ -1077,15 +1069,15 @@ function setView(v, btn) {
         </div>`).join('')}`;
   } else {
     document.getElementById('sidebar').innerHTML = `
-      <div class="nl">VisÃ£o Geral</div>
-      <button class="ni active" onclick="navTo(this,'dash')"><span class="ni-ico">â—ˆ</span>Dashboard</button>
-      <button class="ni" onclick="navTo(this,'agenda')"><span class="ni-ico">â—·</span>Agenda<span class="ni-ct">8</span></button>
-      <button class="ni" onclick="navTo(this,'projetos')"><span class="ni-ico">â—§</span>Projetos</button>
+      <div class="nl">Visão Geral</div>
+      <button class="ni active" onclick="navTo(this,'dash')"><span class="ni-ico">◈</span>Dashboard</button>
+      <button class="ni" onclick="navTo(this,'agenda')"><span class="ni-ico">◷</span>Agenda<span class="ni-ct">8</span></button>
+      <button class="ni" onclick="navTo(this,'projetos')"><span class="ni-ico">◧</span>Projetos</button>
       <div class="nl">Performance</div>
-      <button class="ni" onclick="navTo(this,'northstars')"><span class="ni-ico">â­</span>North Stars</button>
-      <button class="ni" onclick="navTo(this,'maturidade')"><span class="ni-ico">ðŸ“Š</span>Maturidade</button>
-      <button class="ni" onclick="navTo(this,'ranking')"><span class="ni-ico">ðŸ†</span>Ranking</button>
-      <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">â—¬</span>Alertas<span class="ni-ct">4</span></button>
+      <button class="ni" onclick="navTo(this,'northstars')"><span class="ni-ico">⭐</span>North Stars</button>
+      <button class="ni" onclick="navTo(this,'maturidade')"><span class="ni-ico">📊</span>Maturidade</button>
+      <button class="ni" onclick="navTo(this,'ranking')"><span class="ni-ico">🏆</span>Ranking</button>
+      <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">◬</span>Alertas<span class="ni-ct">4</span></button>
       <div class="nl" style="margin-top:16px">Time</div>
       <div id="sidebar-team"></div>`;
     renderSidebarTeam();
@@ -1097,199 +1089,172 @@ function setView(v, btn) {
 
 function switchMember(idx) { renderMemberView(idx); }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ACTIONS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════ ACTIONS ═══════════════
 
 function doSync(btn) {
-  btn.textContent='âŸ³ Sincronizandoâ€¦'; btn.disabled=true;
-  syncMyCalendar().then(()=>{
-    btn.textContent='âŸ³ Sync'; btn.disabled=false;
-    const ss = document.getElementById('sync-status');
-    ss.style.display='inline-flex';
-    setTimeout(()=>ss.style.display='none', 3000);
-  }).catch(()=>{btn.textContent='âŸ³ Sync';btn.disabled=false;});
+  btn.textContent='⟳ Sincronizando…'; btn.disabled=true;
+  if(window._sbSync) {
+    window._sbSync().finally(()=>{btn.textContent='⟳ Sync';btn.disabled=false;});
+  } else {
+    setTimeout(()=>{btn.textContent='⟳ Sync';btn.disabled=false;},1500);
+  }
 }
 
 let connected = {cal:false,mail:false,drive:false};
 function connectSource(src) {
-  // Conecta via Google OAuth real
-  loginWithGoogle();
+  if(window._sbLogin) window._sbLogin();
 }
 
 function addProject() {
   const n = document.getElementById('m-n').value.trim();
   if(!n) return;
-  PROJECTS.unshift({n,o:document.getElementById('m-o').value,s:document.getElementById('m-st').value,p:parseInt(document.getElementById('m-p').value)||0,ic:'ðŸ“Œ',c:'#FF4F11',sec:document.getElementById('m-s2').value});
+  PROJECTS.unshift({n,o:document.getElementById('m-o').value,s:document.getElementById('m-st').value,p:parseInt(document.getElementById('m-p').value)||0,ic:'📌',c:'#FF4F11',sec:document.getElementById('m-s2').value});
   document.getElementById('modal').classList.add('hidden');
   renderProjects('proj-dash',4);
   renderKPIs();
   if(currentTab==='projetos') renderProjects('all-proj');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SUPABASE AUTH + CALENDAR SYNC â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+</script>
 
-const SUPABASE_URL  = 'https://gaubpaxaywmfzudajqyn.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_f0H846JTMq1aBx0jn-p7Bw_FwUjm6Ho';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+// SUPABASE AUTH + CALENDAR SYNC
+(function() {
+  var sb = supabase.createClient(
+    'https://gaubpaxaywmfzudajqyn.supabase.co',
+    'sb_publishable_f0H846JTMq1aBx0jn-p7Bw_FwUjm6Ho'
+  );
 
-let currentSession = null;
+  var sess = null;
+  window._sbLogout = function() { sb.auth.signOut(); };
+  window._sbSync   = syncCalendar;
 
-// Vincula o botÃ£o de login apÃ³s o DOM carregar
-document.getElementById('btn-google-login').addEventListener('click', () => loginWithGoogle());
+  window.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('btn-login');
+    if (btn) btn.addEventListener('click', loginWithGoogle);
+  });
 
-window._loginWithGoogle = async function loginWithGoogle() {
-  document.getElementById('login-loading').style.display = 'block';
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      scopes: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/drive.metadata.readonly',
-      queryParams: { access_type: 'offline', prompt: 'consent' },
-      redirectTo: window.location.href
+  function loginWithGoogle() {
+    sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+  }
+  window._sbLogin = loginWithGoogle;
+
+  function showChip(user) {
+    var name   = (user.user_metadata && user.user_metadata.full_name) || user.email;
+    var avatar = user.user_metadata && user.user_metadata.avatar_url;
+    var init   = name.split(' ').slice(0,2).map(function(n){return n[0];}).join('').toUpperCase();
+    var wrap   = document.getElementById('user-chip-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = avatar
+      ? '<div class="user-chip" onclick="window._sbLogout()" title="Sair"><img class="user-av" src="'+avatar+'">'+name.split(' ')[0]+'</div>'
+      : '<div class="user-chip" onclick="window._sbLogout()" title="Sair"><div class="user-av-fb">'+init+'</div>'+name.split(' ')[0]+'</div>';
+  }
+
+  async function syncCalendar() {
+    if (!sess || !sess.provider_token) { console.log('Sem token'); return; }
+    var token  = sess.provider_token;
+    var userId = sess.user.id;
+    var now    = new Date();
+    var start  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    var end    = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59).toISOString();
+
+    try {
+      var res  = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=200&orderBy=startTime',
+        { headers: { 'Authorization': 'Bearer '+token } });
+      var data = await res.json();
+      var items = data.items || [];
+
+      var events = items.map(function(e) {
+        return { id: e.id, user_id: userId, title: e.summary || '(sem titulo)',
+          start_at: (e.start && (e.start.dateTime || e.start.date)),
+          end_at:   (e.end   && (e.end.dateTime   || e.end.date)),
+          attendees: e.attendees || [], meet_link: e.hangoutLink || null, status: e.status };
+      });
+
+      if (events.length) await sb.from('calendar_events').upsert(events, { onConflict: 'id' });
+
+      var logs = events.filter(function(e){return e.status!=='cancelled';}).map(function(e){
+        return { user_id: userId, source: 'calendar', points: 50, reason: 'Reuniao: '+e.title, ref_id: 'meet_'+e.id };
+      });
+      if (logs.length) await sb.from('xp_log').upsert(logs, { onConflict: 'ref_id', ignoreDuplicates: true });
+
+      var xpRes   = await sb.from('xp_log').select('points').eq('user_id', userId);
+      var xpTotal = (xpRes.data || []).reduce(function(s,r){return s+r.points;}, 0);
+      var level   = Math.floor(xpTotal/1000)+1;
+
+      await sb.from('profiles').update({ xp_total: xpTotal, level: level }).eq('id', userId);
+      await sb.from('member_stats').upsert({ user_id: userId,
+        name: (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email,
+        avatar_url: (sess.user.user_metadata && sess.user.user_metadata.avatar_url) || null,
+        xp_total: xpTotal, level: level,
+        meetings_month: events.filter(function(e){return e.status!=='cancelled';}).length,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+      // Reunioes de hoje no Meu Painel
+      var el = document.getElementById('my-meetings');
+      if (el) {
+        var today = new Date().toDateString();
+        var todayEvs = events.filter(function(e){return e.start_at && new Date(e.start_at).toDateString()===today;}).slice(0,5);
+        el.innerHTML = todayEvs.length
+          ? todayEvs.map(function(e){
+              var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+              return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span></div>';
+            }).join('')
+          : '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniao hoje</div>';
+      }
+
+      // Sync box
+      var sb2 = document.getElementById('sync-box');
+      if (sb2) sb2.innerHTML = '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div><div class="sync-s">'+events.length+' eventos este mes</div><div class="sync-btns"><span class="sync-ok">Calendar conectado</span></div>';
+
+      console.log('Sync ok:', events.length, 'eventos · XP:', xpTotal);
+    } catch(err) {
+      console.error('Sync error:', err);
+    }
+  }
+
+  sb.auth.onAuthStateChange(function(event, s) {
+    if (event === 'SIGNED_IN' && s) {
+      var email = s.user.email || '';
+      if (!email.endsWith('@49educacao.com.br') && !email.endsWith('@49er.com.br')) {
+        sb.auth.signOut();
+        alert('Acesso restrito a @49educacao.com.br');
+        return;
+      }
+      sess = s;
+      document.getElementById('login-overlay').classList.add('hidden');
+      showChip(s.user);
+      syncCalendar();
+    }
+    if (event === 'SIGNED_OUT') {
+      sess = null;
+      document.getElementById('login-overlay').classList.remove('hidden');
+      var w = document.getElementById('user-chip-wrap');
+      if (w) w.innerHTML = '';
     }
   });
-  if (error) {
-    alert('Erro: ' + error.message);
-    document.getElementById('login-loading').style.display = 'none';
-  }
-}
 
-async function logout() {
-  await sb.auth.signOut();
-  document.getElementById('login-overlay').classList.remove('hidden');
-  document.getElementById('user-chip-wrap').innerHTML = '';
-}
-
-async function syncMyCalendar() {
-  if (!currentSession?.provider_token) return;
-  const token  = currentSession.provider_token;
-  const userId = currentSession.user.id;
-
-  const now   = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59).toISOString();
-
-  try {
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}&singleEvents=true&maxResults=200&orderBy=startTime`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const data = await res.json();
-    if (!data.items) return;
-
-    const events = data.items.map(e => ({
-      id:        e.id,
-      user_id:   userId,
-      title:     e.summary || '(sem tÃ­tulo)',
-      start_at:  e.start?.dateTime || e.start?.date,
-      end_at:    e.end?.dateTime   || e.end?.date,
-      attendees: e.attendees || [],
-      meet_link: e.hangoutLink || null,
-      status:    e.status,
-    }));
-
-    await sb.from('calendar_events').upsert(events, { onConflict: 'id' });
-
-    const xpTotal = await calcXP(userId, events);
-
-    await sb.from('member_stats').upsert({
-      user_id:        userId,
-      name:           currentSession.user.user_metadata?.full_name || currentSession.user.email,
-      avatar_url:     currentSession.user.user_metadata?.avatar_url || null,
-      xp_total:       xpTotal,
-      level:          Math.floor(xpTotal / 1000) + 1,
-      meetings_month: events.filter(e => e.status !== 'cancelled').length,
-      updated_at:     new Date().toISOString()
-    }, { onConflict: 'user_id' });
-
-    const syncBox = document.getElementById('sync-box');
-    if (syncBox) {
-      syncBox.innerHTML = `
-        <div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div>
-        <div class="sync-s" style="margin-bottom:10px">${events.length} eventos sincronizados este mÃªs</div>
-        <div class="sync-btns">
-          <span class="sync-ok">ðŸ“… Calendar</span>
-          <span class="sync-ok">âœ‰ï¸ Gmail</span>
-          <span class="sync-ok">ðŸ“ Drive</span>
-        </div>`;
-    }
-
-    renderMyMeetings(events);
-
-  } catch(err) {
-    console.error('Sync error:', err);
-  }
-}
-
-async function calcXP(userId, events) {
-  const logs = [];
-  for (const e of events) {
-    if (e.status === 'cancelled') continue;
-    logs.push({ user_id: userId, source: 'calendar', points: 50, reason: `ReuniÃ£o: ${e.title}`, ref_id: `meet_${e.id}` });
-    if (e.start_at && e.end_at) {
-      const hrs = (new Date(e.end_at) - new Date(e.start_at)) / 3600000;
-      if (hrs > 2) logs.push({ user_id: userId, source: 'calendar', points: -20, reason: 'ReuniÃ£o +2h', ref_id: `long_${e.id}` });
-    }
-  }
-  if (logs.length) await sb.from('xp_log').upsert(logs, { onConflict: 'ref_id', ignoreDuplicates: true });
-  const { data } = await sb.from('xp_log').select('points').eq('user_id', userId);
-  const total = (data || []).reduce((s, r) => s + r.points, 0);
-  await sb.from('profiles').update({ xp_total: total, level: Math.floor(total/1000)+1 }).eq('id', userId);
-  return total;
-}
-
-function renderMyMeetings(events) {
-  const el = document.getElementById('my-meetings');
-  if (!el) return;
-  const today = new Date().toDateString();
-  const todayEvents = events.filter(e => e.start_at && e.status !== 'cancelled' && new Date(e.start_at).toDateString() === today).slice(0,5);
-  if (!todayEvents.length) { el.innerHTML = '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reuniÃ£o hoje</div>'; return; }
-  el.innerHTML = todayEvents.map(e => {
-    const t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="mtg"><span class="mtg-t">${t}</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">${e.title}</span>${e.meet_link?`<a href="${e.meet_link}" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>`:''}</div>`;
-  }).join('');
-}
-
-function renderUserChip(user) {
-  const name = user.user_metadata?.full_name || user.email;
-  const avatar = user.user_metadata?.avatar_url;
-  const initials = name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
-  document.getElementById('user-chip-wrap').innerHTML = `
-    <div class="user-chip" onclick="logout()" title="Clique para sair">
-      ${avatar ? `<img class="user-av" src="${avatar}">` : `<div class="user-av-fallback">${initials}</div>`}
-      ${name.split(' ')[0]}
-    </div>`;
-}
-
-sb.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session) {
-    const email = session.user.email || '';
-    if (!email.endsWith('@49educacao.com.br') && !email.endsWith('@49er.com.br')) {
-      await sb.auth.signOut();
-      alert('Acesso restrito a @49educacao.com.br');
-      return;
-    }
-    currentSession = session;
-    document.getElementById('login-overlay').classList.add('hidden');
-    renderUserChip(session.user);
-    await syncMyCalendar();
-  }
-  if (event === 'SIGNED_OUT') {
-    currentSession = null;
-    document.getElementById('login-overlay').classList.remove('hidden');
-    document.getElementById('user-chip-wrap').innerHTML = '';
-  }
-});
-
-(async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    const email = session.user.email || '';
+  sb.auth.getSession().then(function(r) {
+    var s = r.data && r.data.session;
+    if (!s) return;
+    var email = s.user.email || '';
     if (email.endsWith('@49educacao.com.br') || email.endsWith('@49er.com.br')) {
-      currentSession = session;
+      sess = s;
       document.getElementById('login-overlay').classList.add('hidden');
-      renderUserChip(session.user);
-      await syncMyCalendar();
+      showChip(s.user);
+      syncCalendar();
     }
-  }
-})();
+  });
 
+})();
+</script>
+</body>
+</html>

@@ -1341,8 +1341,8 @@ function addProject() {
       .limit(500);
     
     // Filtro de mes selecionado na agenda
-    var agendaMonth = document.getElementById('agenda-month-filter') ? 
-      document.getElementById('agenda-month-filter').value : null;
+    var agendaMonthEl = document.getElementById('agenda-month-filter');
+    var agendaMonth = agendaMonthEl ? agendaMonthEl.value : '';
     if (agendaMonth && res.data) {
       res.data = res.data.filter(function(e){ return e.start_at && e.start_at.slice(0,7) === agendaMonth; });
     }
@@ -1355,19 +1355,21 @@ function addProject() {
     if (!document.getElementById('agenda-month-filter')) {
       var filterHtml = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">' +
         '<span style="font-size:11px;font-weight:600;color:var(--g400)">Mês:</span>' +
-        '<button class="mtab active" onclick="window._filterAgenda(null,this)">Tudo 2026</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-01',this)">Jan</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-02',this)">Fev</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-03',this)">Mar</button>' +
-        '<button class="mtab" onclick="window._filterAgenda('2026-04',this)">Abr</button>' +
+        '<button class="mtab active" data-month="" onclick="window._filterAgenda(this)">Tudo 2026</button>' +
+        '<button class="mtab" data-month="2026-01" onclick="window._filterAgenda(this)">Jan</button>' +
+        '<button class="mtab" data-month="2026-02" onclick="window._filterAgenda(this)">Fev</button>' +
+        '<button class="mtab" data-month="2026-03" onclick="window._filterAgenda(this)">Mar</button>' +
+        '<button class="mtab" data-month="2026-04" onclick="window._filterAgenda(this)">Abr</button>' +
         '<input type="hidden" id="agenda-month-filter" value="">' +
         '</div>';
       el.insertAdjacentHTML('beforebegin', filterHtml);
     }
-    window._filterAgenda = function(month, btn) {
+    window._filterAgenda = function(btn) {
+      var month = btn ? btn.getAttribute('data-month') : '';
       document.getElementById('agenda-month-filter').value = month || '';
-      document.querySelectorAll('#agenda-full').forEach(function(){});
-      if (btn) { document.querySelectorAll('.mtab').forEach(function(t){ if(t.closest('[style*="margin-bottom:14px"]')) t.classList.remove('active'); }); btn.classList.add('active'); }
+      var container = btn ? btn.parentElement : null;
+      if (container) container.querySelectorAll('.mtab').forEach(function(t){ t.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
       renderAgendaReal();
     };
 

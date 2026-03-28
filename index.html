@@ -1330,13 +1330,26 @@ function addProject() {
 
   // 5. Agenda — proximos 7 dias
   async function renderAgendaReal() {
-    // Mostra agenda desde Jan 2026
-    var agendaStart = '2026-01-01T00:00:00Z';
-    var agendaEnd = new Date(); agendaEnd.setDate(agendaEnd.getDate()+30); // +30 dias no futuro
+    // Mostra agenda do mes selecionado (ou semana atual se sem filtro)
+    var agendaMonthRaw = document.getElementById('agenda-month-filter') ?
+      document.getElementById('agenda-month-filter').value : '';
+    var agendaStart, agendaEnd;
+    if (agendaMonthRaw) {
+      // Mes especifico selecionado
+      var yr = parseInt(agendaMonthRaw.slice(0,4));
+      var mo = parseInt(agendaMonthRaw.slice(5,7));
+      agendaStart = new Date(yr, mo-1, 1).toISOString();
+      agendaEnd   = new Date(yr, mo, 0, 23, 59, 59).toISOString();
+    } else {
+      // Tudo 2026: jan ate hoje+30
+      agendaStart = '2026-01-01T00:00:00Z';
+      var ae = new Date(); ae.setDate(ae.getDate()+30);
+      agendaEnd = ae.toISOString();
+    }
 
     var res = await sb.from('calendar_events')
       .select('title, start_at, end_at, meet_link, attendees, user_id')
-      .gte('start_at', agendaStart).lte('start_at', agendaEnd.toISOString())
+      .gte('start_at', agendaStart).lte('start_at', agendaEnd)
       .neq('status','cancelled').order('start_at')
       .limit(500);
     
@@ -1344,7 +1357,13 @@ function addProject() {
     var agendaMonthEl = document.getElementById('agenda-month-filter');
     var agendaMonth = agendaMonthEl ? agendaMonthEl.value : '';
     if (agendaMonth && res.data) {
-      res.data = res.data.filter(function(e){ return e.start_at && e.start_at.slice(0,7) === agendaMonth; });
+      res.data = res.data.filter(function(e) {
+        if (!e.start_at) return false;
+        // Converte para data local antes de comparar (evita bug de timezone)
+        var d = new Date(e.start_at);
+        var localMes = d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1);
+        return localMes === agendaMonth;
+      });
     }
 
     var el = document.getElementById('agenda-full');
@@ -1367,8 +1386,9 @@ function addProject() {
     window._filterAgenda = function(btn) {
       var month = btn ? btn.getAttribute('data-month') : '';
       document.getElementById('agenda-month-filter').value = month || '';
-      var container = btn ? btn.parentElement : null;
-      if (container) container.querySelectorAll('.mtab').forEach(function(t){ t.classList.remove('active'); });
+      // Remove active de TODOS os botoes do filtro de agenda
+      var allFilterBtns = document.querySelectorAll('[data-month]');
+      allFilterBtns.forEach(function(t){ t.classList.remove('active'); });
       if (btn) btn.classList.add('active');
       renderAgendaReal();
     };
@@ -1490,26 +1510,37 @@ function addProject() {
     // 1. Total de reunioes no mes (do banco)
     var v1 = document.getElementById('rk-val-1'), l1 = document.getElementById('rk-lbl-1'), s1 = document.getElementById('rk-sub-1');
     if (v1) {
-      var startMes = mes==='all' ? '2026-01-01T00:00:00Z' : mes+'-01T00:00:00Z';
-      var endMes   = mes==='all' ? new Date().toISOString() : new Date(mes.slice(0,4), parseInt(mes.slice(5,7)), 0, 23, 59).toISOString();
-      var rMeets = await sb.from('calendar_events').select('id', {count:'exact',head:true})
-        .gte('start_at', startMes).lte('start_at', endMes).neq('status','cancelled');
-      var totalMeets = rMeets.count || 0;
-      v1.textContent = totalMeets > 200 ? totalMeets.toLocaleString('pt-BR') : totalMeets;
-      if (l1) l1.textContent = 'Reuniões em '+(mes==='all'?'2026':mesLabel);
-      if (s1) {
-        // Compara com mes anterior
-        var prevMonth = mes === 'all' ? null : (parseInt(mes.slice(5,7)) > 1 ? mes.slice(0,5)+(parseInt(mes.slice(5,7))-1).toString().padStart(2,'0') : null);
-        if (prevMonth) {
-          var rPrev = await sb.from('calendar_events').select('id', {count:'exact',head:true})
-            .gte('start_at', prevMonth+'-01T00:00:00Z').lt('start_at', mes+'-01T00:00:00Z').neq('status','cancelled');
-          var prevCount = rPrev.count || 0;
-          var diff = totalMeets - prevCount;
-          s1.textContent = (diff >= 0 ? '↑ ' : '↓ ') + Math.abs(diff) + ' vs mês anterior';
-          s1.className = 'kpi-sub ' + (diff >= 0 ? 'trend-up' : 'trend-dn');
+      // Usa member_stats (publico) em vez de calendar_events (RLS)
+      var rStats = await sb.from('member_stats').select('meetings_month, meetings_history, xp_total');
+      var totalMeets = 0;
+      var prevTotal = 0;
+      (rStats.data||[]).forEach(function(m) {
+        if (mes === 'all') {
+          // Soma todos os meses do historico
+          var hist = m.meetings_history || {};
+          Object.values(hist).forEach(function(h){ totalMeets += Math.round((h.cal||0)/10); });
         } else {
-          s1.textContent = 'total no período';
+          var hist = m.meetings_history || {};
+          var d = hist[mes] || {};
+          totalMeets += Math.round((d.cal||0)/10);
+          // Mes anterior
+          var prevN = parseInt(mes.slice(5,7))-1;
+          if (prevN > 0) {
+            var prevKey = mes.slice(0,5)+prevN.toString().padStart(2,'0');
+            var dp = hist[prevKey] || {};
+            prevTotal += Math.round((dp.cal||0)/10);
+          }
         }
+      });
+      v1.textContent = totalMeets.toLocaleString('pt-BR');
+      if (l1) l1.textContent = 'Reuniões em '+(mes==='all'?'2026':mesLabel);
+      if (s1 && mes !== 'all') {
+        var diff = totalMeets - prevTotal;
+        s1.textContent = (diff >= 0 ? '↑ ' : '↓ ') + Math.abs(diff) + ' vs mês anterior';
+        s1.className = 'kpi-sub ' + (diff >= 0 ? 'trend-up' : 'trend-dn');
+      } else if (s1) {
+        s1.textContent = 'total acumulado';
+        s1.className = 'kpi-sub';
       }
     }
 
@@ -1725,6 +1756,77 @@ function addProject() {
     });
     if(typeof renderSidebarTeam==='function') renderSidebarTeam();
     renderMonthlyLeaderboard();
+  }
+
+  // ═══ CONQUISTAS REAIS ═══
+  async function loadRealAchievements(userId, userName) {
+    var el = document.getElementById('achievements');
+    if (!el) return;
+
+    // Busca dados do usuario no banco
+    var rXP    = await sb.from('xp_log').select('source, points, created_at').eq('user_id', userId);
+    var rMeets = await sb.from('calendar_events').select('id, start_at, attendees').eq('user_id', userId).neq('status','cancelled');
+    var rStats = await sb.from('member_stats').select('xp_total, meetings_month, meetings_history, level').eq('user_id', userId).single();
+    var rRank  = await sb.from('member_stats').select('user_id, xp_total').order('xp_total', {ascending:false});
+
+    var logs   = rXP.data || [];
+    var meets  = rMeets.data || [];
+    var stats  = rStats.data || {};
+    var hist   = stats.meetings_history || {};
+    var xpTotal = stats.xp_total || 0;
+
+    // Calcula metricas reais
+    var totalMeets = meets.length;
+    var emailPts   = logs.filter(function(l){return l.source==='gmail';}).length;
+    var drivePts   = logs.filter(function(l){return l.source==='drive';}).length;
+
+    // Streak: dias consecutivos com reuniao
+    var meetDays = {};
+    meets.forEach(function(e){ if(e.start_at) meetDays[e.start_at.slice(0,10)] = true; });
+    var streak = 0, maxStreak = 0, cur = 0;
+    var sorted = Object.keys(meetDays).sort();
+    for (var i = 0; i < sorted.length; i++) {
+      if (i === 0) { cur = 1; }
+      else {
+        var diff = (new Date(sorted[i]) - new Date(sorted[i-1])) / 86400000;
+        cur = (diff <= 3) ? cur+1 : 1; // conta seg-sex como consecutivo
+      }
+      if (cur > maxStreak) maxStreak = cur;
+    }
+    streak = maxStreak;
+
+    // Top do ranking?
+    var rankPos = 1;
+    if (rRank.data) {
+      for (var j = 0; j < rRank.data.length; j++) {
+        if (rRank.data[j].user_id === userId) { rankPos = j+1; break; }
+      }
+    }
+
+    // Meses com reunioes > 0
+    var activeMeses = Object.keys(hist).filter(function(k){return (hist[k].cal||0) > 0;}).length;
+
+    // Define conquistas com base em dados reais
+    var achievements = [
+      { ic:'🔥', n:'Streak 7d',    d:'7 dias seguidos',     unlocked: streak >= 7 },
+      { ic:'🏆', n:'Top Reunião',  d:totalMeets+' reuniões', unlocked: totalMeets >= 20 },
+      { ic:'⚡', n:'Hackathon',    d:'Participou',           unlocked: meets.some(function(e){return e.start_at && e.start_at.startsWith('2026-03-28');}) },
+      { ic:'🎓', n:'Mentor',       d:'5+ mentorias',         unlocked: meets.some(function(e){return e.title && (e.title.toLowerCase().includes('mentor') || e.title.toLowerCase().includes('mentoria'));}) },
+      { ic:'🚀', n:'Sprint Hero',  d:'3+ sprints',           unlocked: meets.filter(function(e){return e.title && e.title.toLowerCase().includes('sprint');}).length >= 3 },
+      { ic:'💬', n:'Comunicador',  d:'Gmail conectado',      unlocked: emailPts > 0 },
+      { ic:'🌟', n:'MVP do Mês',   d:'1º no ranking',        unlocked: rankPos === 1 },
+      { ic:'📁', n:'Drive Ativo',  d:'Arquivos no Drive',    unlocked: drivePts > 0 },
+      { ic:'📅', n:'Consistente',  d:'3+ meses ativos',      unlocked: activeMeses >= 3 },
+      { ic:'🎯', n:'XP 1000',      d:'Mais de 1000 XP',      unlocked: xpTotal >= 1000 },
+    ];
+
+    el.innerHTML = achievements.map(function(a) {
+      return '<div class="ach '+(a.unlocked?'':'locked')+'" title="'+(a.unlocked?'Conquistado!':'Bloqueado — '+a.d)+'">' +
+        '<div class="ach-ico">'+a.ic+'</div>' +
+        '<div class="ach-n">'+a.n+'</div>' +
+        '<div class="ach-d">'+a.d+'</div>' +
+      '</div>';
+    }).join('');
   }
 
   // ═══ MEU PAINEL CORRETO ═══

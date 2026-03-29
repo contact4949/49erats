@@ -1245,6 +1245,18 @@ function addProject() {
   });
 
   // ═══ LOGIN ═══
+
+  // Re-autenticacao para capturar provider_token
+  window._reauth = function() {
+    sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+  };
   function loginWithGoogle() {
     sb.auth.signInWithOAuth({ provider:'google', options:{
       scopes:'https://www.googleapis.com/auth/calendar.readonly',
@@ -1938,13 +1950,38 @@ function addProject() {
     var mesAtual=new Date().toISOString().slice(0,7);
     var meetsMes=byMonth[mesAtual]?Math.floor((byMonth[mesAtual].cal||0)/50):0;
 
-    await sb.from('profiles').update({xp_total:xpTotal,level:level,name:userName}).eq('id',userId);
+    // Busca setor do placeholder antes de apagar
+    var rPlaceholder = await sb.from('member_stats')
+      .select('sector')
+      .ilike('name', userName.split(' ')[0]+'%')
+      .neq('user_id', userId)
+      .single();
+    var sectorReal = (rPlaceholder.data && rPlaceholder.data.sector) || null;
+
+    // Apaga placeholder pre-cadastrado com UUID diferente mas mesmo nome
+    await sb.from('member_stats')
+      .delete()
+      .ilike('name', userName.split(' ')[0]+'%')
+      .neq('user_id', userId);
+
+    // Upsert com user_id real do Google
     await sb.from('member_stats').upsert({
-      user_id:userId,name:userName,email:sess.user.email,
-      avatar_url:(sess.user.user_metadata&&sess.user.user_metadata.avatar_url)||null,
-      xp_total:xpTotal,level:level,meetings_month:meetsMes,
-      meetings_history:byMonth,updated_at:new Date().toISOString()
-    },{onConflict:'user_id'});
+      user_id: userId,
+      name: userName,
+      email: sess.user.email,
+      sector: sectorReal,
+      avatar_url: (sess.user.user_metadata && sess.user.user_metadata.avatar_url) || null,
+      xp_total: xpTotal,
+      level: level,
+      meetings_month: meetsMes,
+      meetings_history: byMonth,
+      google_token: token || null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+
+    try {
+      await sb.from('profiles').update({xp_total:xpTotal,level:level,name:userName}).eq('id',userId);
+    } catch(e) { console.log('profiles update ignorado'); }
 
     // Atualiza sync box
     var sb2=document.getElementById('sync-box');

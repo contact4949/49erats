@@ -1402,18 +1402,18 @@ function addProject() {
 
   // 5. Agenda — proximos 7 dias
   async function renderAgendaReal() {
-    // Mostra agenda do mes selecionado (ou semana atual se sem filtro)
-    var agendaMonthRaw = document.getElementById('agenda-month-filter') ?
-      document.getElementById('agenda-month-filter').value : '';
+    // Busca agenda baseada no filtro de mes
+    var agendaMonthEl = document.getElementById('agenda-month-filter');
+    var agendaMonthRaw = agendaMonthEl ? agendaMonthEl.value : '';
     var agendaStart, agendaEnd;
-    if (agendaMonthRaw) {
-      // Mes especifico selecionado
+    if (agendaMonthRaw && agendaMonthRaw.length === 7) {
       var yr = parseInt(agendaMonthRaw.slice(0,4));
       var mo = parseInt(agendaMonthRaw.slice(5,7));
-      agendaStart = new Date(yr, mo-1, 1).toISOString();
-      agendaEnd   = new Date(yr, mo, 0, 23, 59, 59).toISOString();
+      agendaStart = yr + '-' + (mo<10?'0':'') + mo + '-01T00:00:00.000Z';
+      // Ultimo dia do mes
+      var lastDay = new Date(yr, mo, 0).getDate();
+      agendaEnd = yr + '-' + (mo<10?'0':'') + mo + '-' + lastDay + 'T23:59:59.000Z';
     } else {
-      // Tudo 2026: jan ate hoje+30
       agendaStart = '2026-01-01T00:00:00Z';
       var ae = new Date(); ae.setDate(ae.getDate()+30);
       agendaEnd = ae.toISOString();
@@ -1421,22 +1421,14 @@ function addProject() {
 
     var res = await sb.from('calendar_events')
       .select('title, start_at, end_at, meet_link, attendees, user_id')
-      .gte('start_at', agendaStart).lte('start_at', agendaEnd)
-      .neq('status','cancelled').order('start_at')
+      .gte('start_at', agendaStart)
+      .lte('start_at', agendaEnd)
+      .neq('status','cancelled')
+      .order('start_at')
       .limit(500);
     
     // Filtro de mes selecionado na agenda
-    var agendaMonthEl = document.getElementById('agenda-month-filter');
-    var agendaMonth = agendaMonthEl ? agendaMonthEl.value : '';
-    if (agendaMonth && res.data) {
-      res.data = res.data.filter(function(e) {
-        if (!e.start_at) return false;
-        // Converte para data local antes de comparar (evita bug de timezone)
-        var d = new Date(e.start_at);
-        var localMes = d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1);
-        return localMes === agendaMonth;
-      });
-    }
+    // filtro ja aplicado na query acima
 
     var el = document.getElementById('agenda-full');
     if (!el) return;
@@ -1737,11 +1729,9 @@ function addProject() {
     if (bannerMes) bannerMes.textContent = (mes==='all'?'TODO 2026':mesLabel.toUpperCase()+' 2026');
 
     // Dias restantes no mes atual
-    if (bannerDias && mes !== 'all') {
-      var now = new Date();
-      var lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0);
-      var diasRestantes = Math.max(0, Math.ceil((lastDay-now)/86400000));
-      bannerDias.textContent = '⏳ Faltam '+diasRestantes+' dias';
+    if (bannerDias) {
+      var mesNames2 = {'2026-01':'Jan–2026','2026-02':'Fev–2026','2026-03':'Mar–2026','2026-04':'Abr–2026','all':'Todo o ano'};
+      bannerDias.textContent = mesNames2[mes] || mes;
     }
 
     // 1. Total de reunioes no mes (do banco)

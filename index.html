@@ -1875,20 +1875,28 @@ function addProject() {
   async function syncHistorico(token, userId, userName) {
     var start='2026-01-01T00:00:00Z', end=new Date().toISOString();
     var events=[], pageToken=null;
+    var pagina = 0;
     do {
-      var url='https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=500&orderBy=startTime';
-      if(pageToken) url+='&pageToken='+pageToken;
+      pagina++;
+      var url='https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+start+'&timeMax='+end+'&singleEvents=true&maxResults=2500&orderBy=startTime';
+      if(pageToken) url+='&pageToken='+encodeURIComponent(pageToken);
       try {
         var r=await fetch(url,{headers:{'Authorization':'Bearer '+token}});
         var d=await r.json();
+        if(d.error) { console.error('Calendar API erro:', d.error); break; }
         if(d.items) events=events.concat(d.items);
         pageToken=d.nextPageToken||null;
-      } catch(e){break;}
-    } while(pageToken);
+        console.log('Pagina '+pagina+': '+d.items.length+' eventos | Total: '+events.length);
+      } catch(e){ console.error('Fetch erro:', e); break; }
+    } while(pageToken && pagina < 20); // max 20 paginas = 50.000 eventos
     if(!events.length) return {events:[],byMonth:{}};
 
     var mapped=events.map(function(e){return{id:e.id,user_id:userId,title:e.summary||'(sem titulo)',start_at:(e.start&&(e.start.dateTime||e.start.date)),end_at:(e.end&&(e.end.dateTime||e.end.date)),attendees:e.attendees||[],meet_link:e.hangoutLink||null,status:e.status};});
-    for(var i=0;i<mapped.length;i+=100) await sb.from('calendar_events').upsert(mapped.slice(i,i+100),{onConflict:'id'});
+    // Salva em lotes de 500 para aguentar volumes grandes
+    for(var i=0;i<mapped.length;i+=500) {
+      await sb.from('calendar_events').upsert(mapped.slice(i,i+500),{onConflict:'id'});
+      console.log('Salvando eventos: '+(i+500)+' / '+mapped.length);
+    }
 
     var byMonth={}, logs=[];
     mapped.filter(function(e){return e.status!=='cancelled'&&e.start_at;}).forEach(function(e){
@@ -1897,7 +1905,7 @@ function addProject() {
       byMonth[mes].cal+=50;
       logs.push({user_id:userId,source:'calendar',points:50,reason:'Reuniao: '+e.title,ref_id:'meet_'+e.id});
     });
-    for(var j=0;j<logs.length;j+=100) await sb.from('xp_log').upsert(logs.slice(j,j+100),{onConflict:'ref_id',ignoreDuplicates:true});
+    // XP calculado pelo trigger — nao precisa de xp_log
     if(userName) monthlyData[userName]=byMonth;
     return {events:mapped,byMonth:byMonth};
   }

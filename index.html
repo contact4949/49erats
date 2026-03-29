@@ -2106,6 +2106,128 @@ function addProject() {
     }).join('');
   }
 
+
+  // ═══ MEU PAINEL — DADOS 100% REAIS ═══
+  async function updateMeuPainelReal() {
+    if (!sess) return;
+    var userId = sess.user.id;
+    var userName = (sess.user.user_metadata && sess.user.user_metadata.full_name) || sess.user.email;
+    var userAvatar = sess.user.user_metadata && sess.user.user_metadata.avatar_url;
+
+    // 1. Busca stats do usuario no banco
+    var rStats = await sb.from('member_stats').select('*').eq('user_id', userId).single();
+    var stats = rStats.data || {};
+
+    // 2. Busca posicao no ranking
+    var rRank = await sb.from('member_stats').select('user_id').order('xp_total', {ascending:false});
+    var rankPos = 1;
+    (rRank.data||[]).forEach(function(m, i){ if(m.user_id === userId) rankPos = i+1; });
+
+    // 3. Busca reunioes do mes atual (Calendar real)
+    var mesStart = new Date(); mesStart.setDate(1); mesStart.setHours(0,0,0,0);
+    var rMeets = await sb.from('calendar_events').select('id,start_at,title,meet_link,attendees')
+      .eq('user_id', userId).gte('start_at', mesStart.toISOString()).neq('status','cancelled').order('start_at');
+    var meetings = rMeets.data || [];
+
+    // 4. Busca todos os eventos do ano para calcular totais
+    var rAll = await sb.from('calendar_events').select('id,start_at')
+      .eq('user_id', userId).gte('start_at','2026-01-01').neq('status','cancelled');
+    var allMeetings = rAll.data || [];
+
+    var xpTotal = stats.xp_total || 0;
+    var level = stats.level || 1;
+    var levelNames = ['','Iniciante','Colaborador','Especialista','Líder','Mestre','Master'];
+    var levelName = levelNames[Math.min(level, levelNames.length-1)] || 'Master';
+    var nextLevelXP = level * 500;
+    var pct = Math.min(100, Math.round((xpTotal % 500) / 500 * 100));
+
+    // 5. Atualiza Hero
+    var h2 = document.querySelector('.hero-info h2');
+    var hp = document.querySelector('.hero-info p');
+    var hAv = document.querySelector('.hero-av');
+    var hMtgs = document.getElementById('h-mtgs');
+    var hXP = document.getElementById('h-xp');
+    var hRank = document.getElementById('h-rank');
+
+    if (h2) h2.textContent = userName;
+    if (hp) hp.textContent = sess.user.email + ' · ' + (stats.sector || 'Time');
+    if (hAv && userAvatar) {
+      hAv.style.backgroundImage = 'url('+userAvatar+')';
+      hAv.style.backgroundSize = 'cover';
+      hAv.style.backgroundPosition = 'center';
+      hAv.textContent = '';
+    }
+    if (hMtgs) hMtgs.textContent = allMeetings.length;
+    if (hXP) hXP.textContent = xpTotal.toLocaleString('pt-BR');
+    if (hRank) hRank.textContent = '#' + rankPos;
+
+    // 6. Atualiza XP bar
+    var xpBadge = document.getElementById('xp-badge');
+    var xpNext = document.getElementById('xp-next');
+    var xpFill = document.getElementById('xp-fill');
+    if (xpBadge) xpBadge.textContent = 'Nível ' + level + ' · ' + levelName + ' 🔥';
+    if (xpNext) xpNext.textContent = xpTotal.toLocaleString('pt-BR') + ' / ' + nextLevelXP.toLocaleString('pt-BR') + ' XP para Nível ' + (level+1);
+    if (xpFill) xpFill.style.width = pct + '%';
+
+    // 7. Reunioes de hoje reais
+    var myMtgsEl = document.getElementById('my-meetings');
+    if (myMtgsEl) {
+      var today = new Date().toDateString();
+      var todayMtgs = meetings.filter(function(e){ return e.start_at && new Date(e.start_at).toDateString() === today; }).slice(0,5);
+      if (todayMtgs.length) {
+        myMtgsEl.innerHTML = todayMtgs.map(function(e){
+          var t = new Date(e.start_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+          return '<div class="mtg"><span class="mtg-t">'+t+'</span><div class="mtg-dot" style="background:var(--o)"></div><span class="mtg-n">'+e.title+'</span>'+(e.meet_link?'<a href="'+e.meet_link+'" target="_blank" style="font-size:10px;color:var(--blue);margin-left:6px">Entrar</a>':'')+'</div>';
+        }).join('');
+      } else {
+        myMtgsEl.innerHTML = '<div style="font-size:12px;color:var(--g400);padding:8px 0">Nenhuma reunião hoje 🎉</div>';
+      }
+    }
+
+    // 8. Historico mensal — Metas de abril
+    var hist = stats.meetings_history || {};
+    var mesAtual = new Date().toISOString().slice(0,7);
+    var meetsMesAtual = hist[mesAtual] ? Math.round((hist[mesAtual].cal||0)/10) : meetings.length;
+    var mesMes = {
+      '2026-01': hist['2026-01'] ? Math.round((hist['2026-01'].cal||0)/10) : 0,
+      '2026-02': hist['2026-02'] ? Math.round((hist['2026-02'].cal||0)/10) : 0,
+      '2026-03': hist['2026-03'] ? Math.round((hist['2026-03'].cal||0)/10) : 0,
+      '2026-04': meetsMesAtual
+    };
+
+    // Atualiza setor label
+    var sectorLbl = document.getElementById('mem-sector-lbl');
+    if (sectorLbl) sectorLbl.textContent = stats.sector || 'Time';
+
+    // 9. Metas com dados reais
+    var goalsGrid = document.getElementById('goals-grid');
+    if (goalsGrid) {
+      var metaMes = 30; // meta de reunioes por mes
+      var metaXP  = nextLevelXP;
+      var goals = [
+        {ic:'📅',n:'Reuniões Abr',   cur:mesMes['2026-04'], goal:metaMes, c:'#1A5DAB'},
+        {ic:'⭐',n:'XP do Mês',      cur:xpTotal%500,        goal:500,     c:'#FF4F11'},
+        {ic:'🏆',n:'Ranking',        cur:Math.max(0,10-rankPos+1), goal:10, c:'#0A7A42'},
+        {ic:'📊',n:'Total 2026',     cur:allMeetings.length, goal:200,    c:'#6B3FCF'},
+      ];
+      goalsGrid.innerHTML = goals.map(function(g){
+        var pct = Math.min(100, Math.round(g.cur/Math.max(g.goal,1)*100));
+        return '<div class="goal"><div class="goal-ico">'+g.ic+'</div><div class="goal-info"><div class="goal-name">'+g.n+'</div><div class="goal-bar"><div class="goal-fill" style="width:'+pct+'%;background:'+g.c+'"></div></div><div class="goal-lbl">'+g.cur+' / '+g.goal+'</div></div><div class="goal-pct" style="color:'+g.c+'">'+pct+'%</div></div>';
+      }).join('');
+    }
+
+    // 10. Sync box atualizado
+    var sb2 = document.getElementById('sync-box');
+    if (sb2 && allMeetings.length > 0) {
+      sb2.innerHTML = '<div class="sync-t" style="color:var(--green)">Workspace Sincronizado!</div>' +
+        '<div class="sync-s">'+allMeetings.length+' reuniões em 2026 · '+meetsMesAtual+' este mês · XP: '+xpTotal.toLocaleString('pt-BR')+'</div>' +
+        '<div class="sync-btns"><span class="sync-ok">📅 Calendar</span><span class="sync-ok">📁 Drive</span><span class="sync-ok">✉️ Gmail</span></div>';
+    }
+
+    // Carrega conquistas reais
+    loadRealAchievements(userId, userName);
+  }
+
   // ═══ MEU PAINEL CORRETO ═══
   function openMyPanel(userEmail) {
     var idx=0, firstName=(userEmail||'').split('@')[0].split('.')[0].toLowerCase();
@@ -2137,13 +2259,19 @@ function addProject() {
 
     await loadRealTeam();
 
-    // Renderiza dashboard com dados reais imediatamente
+    // Renderiza dashboard imediatamente com o que tem
     renderKPIsReal();
     renderMeetingsTodayReal();
     setTimeout(function(){renderWeekChartReal();renderTeamChartReal();},200);
 
-    // Sync completo em background
-    syncAllWorkspace();
+    // Sync SEMPRE no login — garante novos membros sincronizem automaticamente
+    console.log('Iniciando sync para:', sess.user.email);
+    syncAllWorkspace().then(function() {
+      // Após sync, atualiza Meu Painel se estiver aberto
+      if (typeof currentView !== 'undefined' && currentView === 'member') {
+        updateMeuPainelReal();
+      }
+    });
   }
 
   sb.auth.onAuthStateChange(function(event,s){

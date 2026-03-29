@@ -47,6 +47,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .live{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green);background:var(--gs);padding:4px 10px;border-radius:20px;}
 .live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s ease-in-out infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .btn{padding:6px 14px;border-radius:var(--r8);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .13s;}
 .btn-ghost{background:var(--w);border:1px solid var(--g200);color:var(--g600);}
 .btn-ghost:hover{border-color:var(--o);color:var(--o);}
@@ -351,7 +352,7 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   <button class="ni" onclick="navTo(this,'northstars')"><span class="ni-ico">⭐</span>North Stars</button>
   <button class="ni" onclick="navTo(this,'maturidade')"><span class="ni-ico">📊</span>Maturidade</button>
   <button class="ni" onclick="navTo(this,'ranking')"><span class="ni-ico">🏆</span>Ranking</button>
-  <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">◬</span>Alertas<span class="ni-ct">4</span></button>
+  <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">📡</span>Radar<span class="ni-ct">IA</span></button>
 
   <div class="nl" style="margin-top:16px">Time</div>
   <div id="sidebar-team"></div>
@@ -446,8 +447,79 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
     <div class="lb" id="leaderboard"></div>
   </div>
 
-  <!-- ALERTAS -->
-  <div id="tab-alertas" style="display:none"><div id="alerts-content"></div></div>
+  <!-- PENDENCIAS / HIGHLIGHTS / LOWLIGHTS -->
+  <div id="tab-alertas" style="display:none">
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:4px">IA · Análise Semanal</div>
+        <div style="font-size:20px;font-weight:800;color:var(--bk)">Radar do Time</div>
+      </div>
+      <button class="btn btn-primary" onclick="window._gerarRadar()" id="btn-radar" style="display:flex;align-items:center;gap:6px;">
+        <span>✨</span> Gerar com IA
+      </button>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="radar-loading" style="display:none;text-align:center;padding:40px;color:var(--g400);font-size:13px;">
+      <div style="font-size:32px;margin-bottom:12px;animation:spin 1s linear infinite;display:inline-block">⟳</div>
+      <div>Claude está analisando as reuniões da semana...</div>
+    </div>
+
+    <!-- 3 COLUNAS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;" id="radar-grid">
+
+      <!-- HIGHLIGHTS -->
+      <div style="background:var(--gs);border:1.5px solid #80D0A0;border-radius:var(--r16);padding:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <span style="font-size:20px">🌟</span>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--green)">Highlights</div>
+            <div style="font-size:10px;color:var(--g400)">Positivos da semana</div>
+          </div>
+        </div>
+        <div id="highlights-content">
+          <div style="font-size:12px;color:var(--g400);font-style:italic">Clique em "Gerar com IA" para analisar as reuniões da semana e extrair os pontos positivos automaticamente.</div>
+        </div>
+      </div>
+
+      <!-- PENDÊNCIAS -->
+      <div style="background:var(--bs);border:1.5px solid #80AADD;border-radius:var(--r16);padding:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <span style="font-size:20px">⚡</span>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--blue)">Pendências</div>
+            <div style="font-size:10px;color:var(--g400)">Em andamento · Atenção</div>
+          </div>
+        </div>
+        <div id="pendencias-content">
+          <div style="font-size:12px;color:var(--g400);font-style:italic">Tarefas mencionadas nas reuniões e projetos sem atualização aparecem aqui automaticamente.</div>
+        </div>
+      </div>
+
+      <!-- LOWLIGHTS -->
+      <div style="background:var(--rs);border:1.5px solid #F0A0A0;border-radius:var(--r16);padding:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <span style="font-size:20px">🔴</span>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--red)">Lowlights</div>
+            <div style="font-size:10px;color:var(--g400)">Riscos · Plano de ação da IA</div>
+          </div>
+        </div>
+        <div id="lowlights-content">
+          <div style="font-size:12px;color:var(--g400);font-style:italic">Pontos críticos com plano de ação sugerido pelo Claude aparecem aqui após a análise.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ULTIMA ANALISE -->
+    <div id="ultima-analise" style="margin-top:16px;font-size:11px;color:var(--g400);text-align:right;display:none">
+      Última análise: <span id="ultima-analise-data">—</span>
+    </div>
+
+  </div>
 
 </div><!-- /view-team -->
 
@@ -1093,7 +1165,7 @@ function setView(v, btn) {
       <button class="ni" onclick="navTo(this,'northstars')"><span class="ni-ico">⭐</span>North Stars</button>
       <button class="ni" onclick="navTo(this,'maturidade')"><span class="ni-ico">📊</span>Maturidade</button>
       <button class="ni" onclick="navTo(this,'ranking')"><span class="ni-ico">🏆</span>Ranking</button>
-      <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">◬</span>Alertas<span class="ni-ct">4</span></button>
+      <button class="ni" onclick="navTo(this,'alertas')"><span class="ni-ico">📡</span>Radar<span class="ni-ct" id="radar-ct">IA</span></button>
       <div class="nl" style="margin-top:16px">Time</div>
       <div id="sidebar-team"></div>`;
     renderSidebarTeam();
@@ -1448,6 +1520,170 @@ function addProject() {
     }).join('');
   }
 
+
+  // ═══ RADAR SEMANAL COM IA ═══
+  window._gerarRadar = async function() {
+    var btn = document.getElementById('btn-radar');
+    var loading = document.getElementById('radar-loading');
+    var grid = document.getElementById('radar-grid');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span>⟳</span> Analisando...'; }
+    if (loading) loading.style.display = 'block';
+    if (grid) grid.style.opacity = '0.3';
+
+    try {
+      // 1. Busca transcrições da semana do banco
+      var weekStart = new Date(); weekStart.setDate(weekStart.getDate()-7); weekStart.setHours(0,0,0,0);
+      var rTransc = await sb.from('meeting_transcriptions')
+        .select('titulo, resumo, decisoes, tarefas, alertas, setor, created_at')
+        .gte('created_at', weekStart.toISOString())
+        .order('created_at', {ascending: false})
+        .limit(20);
+
+      // 2. Busca projetos em risco
+      var rProj = await sb.from('projects')
+        .select('name, status, progress, sector, owner_id')
+        .in('status', ['em_risco', 'em_andamento'])
+        .order('progress');
+
+      // 3. Busca tarefas pendentes das transcrições
+      var todasTarefas = [];
+      var todosResumos = [];
+      var todosAlertas = [];
+      (rTransc.data || []).forEach(function(t) {
+        if (t.resumo) todosResumos.push('['+t.titulo+']: '+t.resumo);
+        (t.tarefas || []).forEach(function(ta) { todasTarefas.push(ta); });
+        (t.alertas || []).forEach(function(a) { todosAlertas.push(a); });
+      });
+
+      // 4. Manda para Claude gerar o radar
+            var contexto = 'RESUMOS: ' + (todosResumos.join(' | ') || 'Nenhuma reuniao analisada ainda.') +
+        ' TAREFAS: ' + (todasTarefas.map(function(t){return t.responsavel+': '+t.tarefa;}).join(' | ') || 'Nenhuma tarefa.') +
+        ' ALERTAS: ' + (todosAlertas.join(' | ') || 'Nenhum alerta.') +
+        ' PROJETOS: ' + ((rProj.data||[]).map(function(p){return p.name+' ('+p.status+') '+p.progress+'%';}).join(' | ') || 'Nenhum projeto.');
+
+      var promptRadar = 'Voce e o assistente de gestao da 49 Educacao. Com base nas informacoes abaixo, gere um radar executivo em JSON com: highlights (pontos positivos), pendencias (tarefas em andamento com responsavel e acao), lowlights (problemas com plano_ia de 3 passos). Contexto: ' + contexto + '. Responda APENAS com JSON: {"highlights":[{"titulo":"...","descricao":"...","setor":"..."}],"pendencias":[{"titulo":"...","responsavel":"...","urgencia":"alta|media|baixa","acao":"..."}],"lowlights":[{"problema":"...","impacto":"...","plano_ia":["passo1","passo2","passo3"],"setor":"..."}]}';
+
+      // Chama via Edge Function (que tem a chave segura)
+      var radarRes = await fetch(
+        'https://gaubpaxaywmfzudajqyn.supabase.co/functions/v1/radar-semanal',
+        {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer 49hub_cron_2026', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contexto: contexto })
+        }
+      );
+
+      var radar = await radarRes.json();
+      if (!radar.ok) throw new Error(radar.error || 'Erro na IA');
+
+      // 5. Renderiza Highlights
+      var hEl = document.getElementById('highlights-content');
+      if (hEl && radar.highlights) {
+        hEl.innerHTML = radar.highlights.map(function(h) {
+          return '<div style="background:rgba(255,255,255,.7);border-radius:var(--r8);padding:12px;margin-bottom:8px;">' +
+            '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">✅ '+h.titulo+'</div>' +
+            '<div style="font-size:11px;color:var(--g600);line-height:1.5">'+h.descricao+'</div>' +
+            (h.setor?'<div style="font-size:10px;color:var(--green);margin-top:4px;font-weight:600">'+h.setor+'</div>':'') +
+          '</div>';
+        }).join('');
+      }
+
+      // 6. Renderiza Pendências
+      var pEl = document.getElementById('pendencias-content');
+      if (pEl && radar.pendencias) {
+        var urgColors = {alta:'var(--red)',media:'var(--yellow)',baixa:'var(--blue)'};
+        pEl.innerHTML = radar.pendencias.map(function(p) {
+          var cor = urgColors[p.urgencia] || 'var(--blue)';
+          return '<div style="background:rgba(255,255,255,.7);border-radius:var(--r8);padding:12px;margin-bottom:8px;border-left:3px solid '+cor+'">' +
+            '<div style="font-size:12px;font-weight:700;color:var(--bk);margin-bottom:3px">'+p.titulo+'</div>' +
+            '<div style="font-size:10px;color:var(--g400);margin-bottom:5px">👤 '+p.responsavel+' · <span style="color:'+cor+';font-weight:600">'+p.urgencia.toUpperCase()+'</span></div>' +
+            '<div style="font-size:11px;color:var(--g600)">→ '+p.acao+'</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      // 7. Renderiza Lowlights
+      var lEl = document.getElementById('lowlights-content');
+      if (lEl && radar.lowlights) {
+        lEl.innerHTML = radar.lowlights.map(function(l) {
+          return '<div style="background:rgba(255,255,255,.7);border-radius:var(--r8);padding:12px;margin-bottom:8px;">' +
+            '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:3px">⚠️ '+l.problema+'</div>' +
+            '<div style="font-size:11px;color:var(--g600);margin-bottom:8px">'+l.impacto+'</div>' +
+            '<div style="font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Plano de ação (IA):</div>' +
+            (l.plano_ia||[]).map(function(p,i){return '<div style="font-size:11px;color:var(--bk);padding:3px 0;display:flex;gap:6px;"><span style="color:var(--o);font-weight:700;flex-shrink:0">'+(i+1)+'.</span>'+p+'</div>';}).join('') +
+          '</div>';
+        }).join('');
+      }
+
+      // Salva no banco
+      await sb.from('meeting_transcriptions').insert({
+        titulo: 'Radar Semanal IA - '+new Date().toLocaleDateString('pt-BR'),
+        data_reuniao: new Date().toISOString().slice(0,10),
+        resumo: 'Radar automático gerado pela IA',
+        decisoes: radar.highlights || [],
+        tarefas: radar.pendencias || [],
+        alertas: radar.lowlights || [],
+        raw_analise: radar,
+        created_at: new Date().toISOString()
+      });
+
+      var ua = document.getElementById('ultima-analise');
+      var uad = document.getElementById('ultima-analise-data');
+      if (ua) ua.style.display = 'block';
+      if (uad) uad.textContent = new Date().toLocaleString('pt-BR');
+
+    } catch(err) {
+      console.error('Radar error:', err);
+      var hEl = document.getElementById('highlights-content');
+      if (hEl) hEl.innerHTML = '<div style="font-size:12px;color:var(--red)">Erro: '+err.message+'. Verifique os logs da Edge Function radar-semanal.</div>';
+    } finally {
+      if (btn) { btn.disabled=false; btn.innerHTML='<span>✨</span> Gerar com IA'; }
+      if (loading) loading.style.display='none';
+      if (grid) grid.style.opacity='1';
+    }
+  };
+
+  // Carrega ultimo radar salvo ao abrir a aba
+  async function loadUltimoRadar() {
+    var res = await sb.from('meeting_transcriptions')
+      .select('*').eq('titulo', 'Radar Semanal IA').order('created_at', {ascending:false}).limit(1);
+    if (!res.data || !res.data.length) return;
+    var r = res.data[0];
+    if (!r.raw_analise || !r.raw_analise.highlights) return;
+    var radar = r.raw_analise;
+
+    var hEl = document.getElementById('highlights-content');
+    if (hEl && radar.highlights) {
+      hEl.innerHTML = radar.highlights.map(function(h) {
+        return '<div style="background:rgba(255,255,255,.7);border-radius:var(--r8);padding:12px;margin-bottom:8px;">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px">✅ '+h.titulo+'</div>' +
+          '<div style="font-size:11px;color:var(--g600);line-height:1.5">'+h.descricao+'</div>' +
+        '</div>';
+      }).join('');
+    }
+    var pEl = document.getElementById('pendencias-content');
+    if (pEl && radar.pendencias) {
+      pEl.innerHTML = radar.pendencias.map(function(p) {
+        return '<div style="background:rgba(255,255,255,.7);border-radius:var(--r8);padding:12px;margin-bottom:8px;border-left:3px solid var(--blue)">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--bk)">'+p.titulo+'</div>' +
+          '<div style="font-size:11px;color:var(--g600)">→ '+p.acao+'</div></div>';
+      }).join('');
+    }
+    var lEl = document.getElementById('lowlights-content');
+    if (lEl && radar.lowlights) {
+      lEl.innerHTML = radar.lowlights.map(function(l) {
+        return '<div style="background:rgba(255,255,255,.7);border-radius:var(--r8);padding:12px;margin-bottom:8px;">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--red)">⚠️ '+l.problema+'</div>' +
+          (l.plano_ia||[]).map(function(p,i){return '<div style="font-size:11px;color:var(--bk);padding:2px 0"><span style="color:var(--o);font-weight:700">'+(i+1)+'.</span> '+p+'</div>';}).join('') +
+        '</div>';
+      }).join('');
+    }
+    var ua = document.getElementById('ultima-analise');
+    var uad = document.getElementById('ultima-analise-data');
+    if (ua) ua.style.display='block';
+    if (uad) uad.textContent = new Date(r.created_at).toLocaleString('pt-BR');
+  }
+
   // ═══ OVERRIDE das funções originais ═══
   var _origNavTo = navTo;
   navTo = function(btn, tab) {
@@ -1463,6 +1699,7 @@ function addProject() {
       renderProjectsReal('all-proj');
       renderKPIsReal();
     }
+    if (tab === 'alertas') loadUltimoRadar();
     if (tab === 'ranking') {
       if (!document.getElementById('month-tabs') && window._injectMonthSelector) window._injectMonthSelector();
       renderMonthlyLeaderboard();
@@ -1702,6 +1939,7 @@ function addProject() {
     var result=await syncHistorico(token,userId,userName);
     var events=result.events, byMonth=result.byMonth;
     await syncDrive(token,userId,userName,byMonth);
+    registerDriveWebhook(token, userId); // registra webhook em background
     await syncGmail(token,userId,userName,byMonth);
 
     var xpRes=await sb.from('xp_log').select('points').eq('user_id',userId);
@@ -1756,6 +1994,55 @@ function addProject() {
     });
     if(typeof renderSidebarTeam==='function') renderSidebarTeam();
     renderMonthlyLeaderboard();
+  }
+
+
+  // ═══ REGISTRA WEBHOOK DO DRIVE ═══
+  async function registerDriveWebhook(token, userId) {
+    if (!token) return;
+    try {
+      // Verifica se ja tem canal ativo
+      var existing = await sb.from('drive_channels')
+        .select('id, expires_at').eq('user_id', userId).single();
+
+      if (existing.data) {
+        var expiry = new Date(existing.data.expires_at);
+        if (expiry > new Date(Date.now() + 24*60*60*1000)) return; // ainda valido por 1 dia
+      }
+
+      // Cria canal de notificacao no Google Drive
+      var channelId = 'hub49-'+userId.slice(0,8)+'-'+Date.now();
+      var webhookUrl = 'https://gaubpaxaywmfzudajqyn.supabase.co/functions/v1/drive-webhook';
+
+      var res = await fetch('https://www.googleapis.com/drive/v3/files/watch', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: channelId,
+          type: 'web_hook',
+          address: webhookUrl,
+          expiration: Date.now() + 7*24*60*60*1000 // 7 dias
+        })
+      });
+
+      var data = await res.json();
+      if (data.resourceId) {
+        // Salva canal no banco
+        await sb.from('drive_channels').upsert({
+          user_id: userId,
+          channel_id: channelId,
+          resource_id: data.resourceId,
+          google_token: token,
+          expires_at: new Date(parseInt(data.expiration)).toISOString()
+        }, { onConflict: 'channel_id' });
+        console.log('Webhook Drive registrado:', channelId);
+      }
+    } catch(e) {
+      console.log('Webhook Drive (nao critico):', e.message);
+    }
   }
 
   // ═══ CONQUISTAS REAIS ═══

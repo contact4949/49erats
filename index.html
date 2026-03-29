@@ -1247,7 +1247,7 @@ function addProject() {
   // ═══ LOGIN ═══
   function loginWithGoogle() {
     sb.auth.signInWithOAuth({ provider:'google', options:{
-      scopes:'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/drive.metadata.readonly',
+      scopes:'https://www.googleapis.com/auth/calendar.readonly',
       queryParams:{access_type:'offline',prompt:'consent'},
       redirectTo: window.location.origin + window.location.pathname
     }});

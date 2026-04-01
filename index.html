@@ -299,9 +299,59 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 .user-chip:hover{border-color:var(--o);}
 .user-av{width:24px;height:24px;border-radius:50%;object-fit:cover;}
 .user-av-fb{width:24px;height:24px;border-radius:50%;background:var(--o);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+/* ── TOAST NOTIFICATIONS (v2.0) ── */
+.toast-container{position:fixed;top:62px;right:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{pointer-events:auto;position:relative;background:var(--w);border:1px solid var(--g200);border-radius:var(--r12);padding:12px 16px 12px 20px;box-shadow:0 8px 24px rgba(0,0,0,.12);display:flex;align-items:center;gap:10px;min-width:280px;max-width:380px;transform:translateX(120%);transition:transform .3s cubic-bezier(.2,1,.3,1),opacity .3s;opacity:0;}
+.toast.show{transform:translateX(0);opacity:1;}
+.toast.hiding{transform:translateX(120%);opacity:0;}
+.toast-ico{font-size:16px;flex-shrink:0;}
+.toast-body{flex:1;}
+.toast-title{font-size:12px;font-weight:700;color:var(--bk);}
+.toast-msg{font-size:11px;color:var(--g400);margin-top:1px;}
+.toast-close{background:none;border:none;font-size:14px;color:var(--g400);cursor:pointer;padding:2px;flex-shrink:0;}
+.toast-close:hover{color:var(--bk);}
+.toast-accent{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:var(--r12) 0 0 var(--r12);}
+.toast.t-success .toast-accent{background:var(--green);}
+.toast.t-info .toast-accent{background:var(--blue);}
+.toast.t-warning .toast-accent{background:var(--yellow);}
+.toast.t-error .toast-accent{background:var(--red);}
+.toast.t-sync .toast-accent{background:var(--o);}
+
+/* ── LAST UPDATE INDICATOR (v2.0) ── */
+.last-update{font-size:10px;color:var(--g400);font-family:var(--mono);display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:12px;background:var(--g100);cursor:default;transition:all .2s;}
+.last-update:hover{background:var(--g200);}
+.last-update .pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* ── TOKEN EXPIRED BANNER (v2.0) ── */
+.token-banner{background:var(--ys);border:1px solid #F0D080;border-radius:var(--r8);padding:8px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.token-banner.hidden{display:none;}
+.token-banner-text{font-size:11px;color:var(--yellow);font-weight:600;flex:1;}
+.token-banner-btn{font-size:11px;font-weight:700;color:var(--o);background:var(--w);border:1px solid var(--o);border-radius:var(--r8);padding:4px 12px;cursor:pointer;font-family:var(--font);transition:all .13s;}
+.token-banner-btn:hover{background:var(--o);color:#fff;}
+
+/* ── LEADERBOARD ANIMATIONS (v2.0) ── */
+@keyframes slideIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.lb-row.animate-in{animation:slideIn .4s ease forwards;}
+.lb-streak{font-size:9px;font-weight:700;color:var(--o);background:var(--o2);padding:1px 6px;border-radius:8px;margin-left:4px;}
+@keyframes rankPulse{0%{box-shadow:0 0 0 0 rgba(255,79,17,.3)}70%{box-shadow:0 0 0 8px rgba(255,79,17,0)}100%{box-shadow:0 0 0 0 rgba(255,79,17,0)}}
+.lb-row.rank-changed{animation:rankPulse 1s ease;}
+
+/* ── SYNC PROGRESS BAR (v2.0) ── */
+.sync-progress{position:fixed;top:54px;left:0;right:0;height:3px;z-index:99;background:transparent;overflow:hidden;}
+.sync-progress-bar{height:100%;background:linear-gradient(90deg,var(--o),#FF7A44,var(--o));width:0;transition:width .5s ease;border-radius:0 2px 2px 0;}
+.sync-progress-bar.indeterminate{width:30%;animation:indeterminate 1.5s ease-in-out infinite;}
+@keyframes indeterminate{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
 </style>
 </head>
 <body>
+
+<!-- TOAST CONTAINER (v2.0) -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- SYNC PROGRESS BAR (v2.0) -->
+<div class="sync-progress" id="sync-progress"><div class="sync-progress-bar" id="sync-progress-bar"></div></div>
 
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay">
@@ -333,7 +383,8 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
   </div>
   <div class="tr">
     <span class="month-chip">ABR 2026</span>
-    <div class="live"><div class="live-dot"></div>Ao vivo</div>
+    <div class="last-update" id="last-update" title="Auto-refresh a cada 5 min"><div class="pulse"></div><span id="last-update-text">Ao vivo</span></div>
+    <div class="live"><div class="live-dot"></div>Realtime</div>
     <button class="btn btn-ghost" onclick="doSync(this)">⟳ Sync</button>
     <button class="btn btn-primary" onclick="document.getElementById('modal').classList.remove('hidden')">+ Projeto</button>
     <div id="user-chip-wrap"></div>
@@ -363,6 +414,13 @@ body{font-family:var(--font);background:var(--g50);color:var(--bk);min-height:10
 
 <!-- ══ TEAM VIEW ══ -->
 <div id="view-team" class="view active">
+
+  <!-- TOKEN BANNER (v2.0) -->
+  <div class="token-banner hidden" id="token-banner">
+    <span style="font-size:16px">⚠️</span>
+    <span class="token-banner-text">Token Google expirado — reconecte para manter o sync automático</span>
+    <button class="token-banner-btn" onclick="window._reauth()">Reconectar</button>
+  </div>
 
   <!-- DASH -->
   <div id="tab-dash">
@@ -2329,6 +2387,287 @@ function addProject() {
     var email=s.user.email||'';
     if(email.endsWith('@49educacao.com.br')||email.endsWith('@49er.com.br')) onSignIn(s);
   });
+  // ═══════════════════════════════════════════
+  // v2.0 — AUTO-REFRESH, REALTIME, TOASTS
+  // ═══════════════════════════════════════════
+
+  var _lastRefresh = Date.now();
+  var _refreshInterval = null;
+  var _syncInterval = null;
+  var _isTabVisible = true;
+  var _tokenExpired = false;
+  var _previousRanking = {};
+
+  // ── TOAST SYSTEM ──
+  window._showToast = function(title, msg, type, duration) {
+    type = type || 'info';
+    duration = duration || 4000;
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    var id = 'toast-' + Date.now();
+    var ico = {success:'✅',info:'ℹ️',warning:'⚠️',error:'❌',sync:'⟳'}[type] || 'ℹ️';
+    var html = '<div class="toast t-'+type+'" id="'+id+'">' +
+      '<div class="toast-accent"></div>' +
+      '<div class="toast-ico">'+ico+'</div>' +
+      '<div class="toast-body"><div class="toast-title">'+title+'</div>'+(msg?'<div class="toast-msg">'+msg+'</div>':'')+'</div>' +
+      '<button class="toast-close" onclick="this.parentElement.remove()">×</button>' +
+    '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+    var el = document.getElementById(id);
+    if (!el) return;
+    setTimeout(function(){ el.classList.add('show'); }, 30);
+    setTimeout(function(){
+      el.classList.add('hiding');
+      el.classList.remove('show');
+      setTimeout(function(){ if(el.parentElement) el.remove(); }, 350);
+    }, duration);
+  };
+
+  // ── SYNC PROGRESS BAR ──
+  function showSyncProgress(show) {
+    var bar = document.getElementById('sync-progress-bar');
+    if (!bar) return;
+    if (show) {
+      bar.classList.add('indeterminate');
+      bar.style.width = '30%';
+    } else {
+      bar.classList.remove('indeterminate');
+      bar.style.width = '100%';
+      setTimeout(function(){ bar.style.width = '0'; }, 500);
+    }
+  }
+
+  // ── LAST UPDATE INDICATOR ──
+  function updateLastRefreshLabel() {
+    var el = document.getElementById('last-update-text');
+    if (!el) return;
+    var diff = Math.round((Date.now() - _lastRefresh) / 1000);
+    if (diff < 10) el.textContent = 'Agora';
+    else if (diff < 60) el.textContent = diff + 's atrás';
+    else if (diff < 3600) el.textContent = Math.floor(diff/60) + 'min atrás';
+    else el.textContent = Math.floor(diff/3600) + 'h atrás';
+  }
+  setInterval(updateLastRefreshLabel, 10000);
+
+  // ── AUTO-REFRESH (POLLING) ──
+  function autoRefreshData() {
+    if (!sess || _tokenExpired) return;
+    _lastRefresh = Date.now();
+    updateLastRefreshLabel();
+    // Refresh all visible data from Supabase (not Google API — that uses sync)
+    renderKPIsReal();
+    renderMeetingsTodayReal();
+    loadRealTeam();
+    // Refresh current tab specific data
+    if (currentTab === 'agenda') renderAgendaReal();
+    if (currentTab === 'ranking') { renderMonthlyLeaderboard(); loadRankingKPIs(selectedMonth); }
+    if (currentTab === 'dash') {
+      chartInited.week = false; chartInited.team = false;
+      renderWeekChartReal(); renderTeamChartReal();
+    }
+    console.log('[v2.0] Auto-refresh executado');
+  }
+
+  function setupAutoRefresh() {
+    // Polling a cada 5 minutos
+    if (_refreshInterval) clearInterval(_refreshInterval);
+    _refreshInterval = setInterval(function() {
+      if (_isTabVisible && sess) autoRefreshData();
+    }, 5 * 60 * 1000); // 5 min
+
+    // Sync completo do Google a cada 30 min
+    if (_syncInterval) clearInterval(_syncInterval);
+    _syncInterval = setInterval(function() {
+      if (_isTabVisible && sess && !_tokenExpired) {
+        console.log('[v2.0] Auto-sync Google (30 min)');
+        showSyncProgress(true);
+        syncAllWorkspace().then(function() {
+          showSyncProgress(false);
+          window._showToast('Sync automático', 'Dados do Google atualizados', 'sync');
+        }).catch(function(e) {
+          showSyncProgress(false);
+          if (e && e.message && e.message.includes('401')) {
+            handleTokenExpired();
+          }
+        });
+      }
+    }, 30 * 60 * 1000); // 30 min
+
+    console.log('[v2.0] Auto-refresh configurado: 5min polling + 30min sync');
+  }
+
+  // ── VISIBILITY API ──
+  document.addEventListener('visibilitychange', function() {
+    _isTabVisible = !document.hidden;
+    if (_isTabVisible && sess) {
+      // Voltou ao foco — refresh imediato se passou mais de 2 min
+      var diff = Date.now() - _lastRefresh;
+      if (diff > 2 * 60 * 1000) {
+        console.log('[v2.0] Tab voltou ao foco — refresh');
+        autoRefreshData();
+      }
+    }
+  });
+
+  // ── TOKEN REFRESH ──
+  function handleTokenExpired() {
+    _tokenExpired = true;
+    var banner = document.getElementById('token-banner');
+    if (banner) banner.classList.remove('hidden');
+    window._showToast('Token expirado', 'Reconecte o Google para manter o sync', 'warning', 8000);
+  }
+
+  async function tryRefreshToken() {
+    try {
+      var r = await sb.auth.refreshSession();
+      if (r.data && r.data.session) {
+        sess = r.data.session;
+        if (sess.provider_token) {
+          _tokenExpired = false;
+          var banner = document.getElementById('token-banner');
+          if (banner) banner.classList.add('hidden');
+          console.log('[v2.0] Token renovado com sucesso');
+          return true;
+        }
+      }
+    } catch(e) {
+      console.log('[v2.0] Refresh token falhou:', e.message);
+    }
+    return false;
+  }
+
+  // ── SUPABASE REALTIME ──
+  function setupRealtimeSubscriptions() {
+    // Channel: member_stats changes
+    sb.channel('hub-member-stats')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'member_stats'
+      }, function(payload) {
+        console.log('[Realtime] member_stats atualizado:', payload.new && payload.new.name);
+        loadRealTeam();
+        if (currentTab === 'ranking') {
+          // Detecta mudança de ranking
+          var name = payload.new && payload.new.name;
+          var newXP = payload.new && payload.new.xp_total;
+          if (name && _previousRanking[name] !== undefined && newXP > _previousRanking[name]) {
+            window._showToast(name.split(' ')[0] + ' subiu!', '+' + (newXP - _previousRanking[name]) + ' XP', 'success');
+          }
+          renderMonthlyLeaderboard();
+          loadRankingKPIs(selectedMonth);
+        }
+        updateLastRefreshLabel();
+        _lastRefresh = Date.now();
+      })
+      .subscribe();
+
+    // Channel: calendar_events changes
+    sb.channel('hub-calendar-events')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'calendar_events'
+      }, function(payload) {
+        console.log('[Realtime] Novo evento de calendário');
+        renderKPIsReal();
+        renderMeetingsTodayReal();
+        if (currentTab === 'agenda') renderAgendaReal();
+        _lastRefresh = Date.now();
+        updateLastRefreshLabel();
+      })
+      .subscribe();
+
+    // Channel: meeting_transcriptions (radar)
+    sb.channel('hub-transcriptions')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'meeting_transcriptions'
+      }, function(payload) {
+        console.log('[Realtime] Nova transcrição/radar');
+        if (currentTab === 'alertas') loadUltimoRadar();
+        var titulo = payload.new && payload.new.titulo;
+        if (titulo && titulo.includes('Radar')) {
+          window._showToast('Radar atualizado', 'Nova análise da IA disponível', 'info');
+        }
+      })
+      .subscribe();
+
+    console.log('[v2.0] Supabase Realtime ativo — 3 channels');
+  }
+
+  // ── SAVE RANKING SNAPSHOT (para detectar mudanças) ──
+  function saveRankingSnapshot() {
+    TEAM.forEach(function(m) {
+      _previousRanking[m.name] = m.pts || m.xp || 0;
+    });
+  }
+
+  // ── ENHANCED doSync ──
+  var _origDoSync = doSync;
+  doSync = function(btn) {
+    if (!sess) { window._showToast('Login necessário', 'Faça login para sincronizar', 'warning'); return; }
+    btn.textContent = '⟳ Sincronizando…'; btn.disabled = true;
+    showSyncProgress(true);
+
+    // Tenta refresh do token antes
+    tryRefreshToken().then(function() {
+      return syncAllWorkspace();
+    }).then(function() {
+      showSyncProgress(false);
+      btn.textContent = '⟳ Sync'; btn.disabled = false;
+      window._showToast('Sync concluído', 'Dados do Google Workspace atualizados', 'success');
+      _lastRefresh = Date.now();
+      updateLastRefreshLabel();
+      saveRankingSnapshot();
+    }).catch(function(e) {
+      showSyncProgress(false);
+      btn.textContent = '⟳ Sync'; btn.disabled = false;
+      if (e && e.message && (e.message.includes('401') || e.message.includes('invalid_grant'))) {
+        handleTokenExpired();
+      } else {
+        window._showToast('Erro no sync', e && e.message || 'Tente novamente', 'error');
+      }
+    });
+  };
+
+  // ── WRAP syncAllWorkspace para detectar erros de token ──
+  var _origSyncAll = syncAllWorkspace;
+  syncAllWorkspace = async function() {
+    try {
+      var result = await _origSyncAll();
+      _tokenExpired = false;
+      var banner = document.getElementById('token-banner');
+      if (banner) banner.classList.add('hidden');
+      return result;
+    } catch(e) {
+      if (e && e.message && (e.message.includes('401') || e.message.includes('Request failed'))) {
+        // Tenta refresh
+        var refreshed = await tryRefreshToken();
+        if (refreshed) {
+          return await _origSyncAll();
+        } else {
+          handleTokenExpired();
+        }
+      }
+      throw e;
+    }
+  };
+
+  // ── ENHANCED onSignIn — start auto-refresh ──
+  var _origOnSignIn = onSignIn;
+  onSignIn = async function(s) {
+    await _origOnSignIn(s);
+    setupAutoRefresh();
+    setupRealtimeSubscriptions();
+    saveRankingSnapshot();
+    _lastRefresh = Date.now();
+    updateLastRefreshLabel();
+    window._showToast('Bem-vindo!', 'Hub conectado — auto-refresh ativo', 'success');
+    console.log('[v2.0] Auto-refresh + Realtime iniciados');
+  };
+
 })();
 </script>
 </body>
